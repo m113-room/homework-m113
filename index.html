@@ -1,3 +1,208 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Homework M.113 - V.1.54</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{font-family:'Sarabun','Plus Jakarta Sans',sans-serif;background:linear-gradient(135deg,#ffe4f0 0%,#e0e7ff 50%,#f3e8ff 100%);min-height:100vh}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px}
+@keyframes modalPop{0%{transform:scale(.8);opacity:0}100%{transform:scale(1);opacity:1}}
+.animate-pop{animation:modalPop .15s cubic-bezier(.175,.885,.32,1.275) forwards}
+</style>
+</head>
+<body class="flex flex-col items-center justify-between p-3 sm:p-6 min-h-screen relative antialiased">
+<div class="flex-grow"></div>
+
+<!-- LOADING OVERLAY -->
+<div id="loading-overlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[100] hidden">
+  <div class="bg-white/90 rounded-3xl p-6 shadow-2xl flex flex-col items-center gap-3 animate-pop">
+    <div class="w-10 h-10 border-4 border-[#FF75BC] border-t-transparent rounded-full animate-spin"></div>
+    <p id="loading-text" class="text-xs font-bold text-slate-700">กำลังโหลดข้อมูล...</p>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div id="login-page" class="w-full max-w-sm bg-white/85 backdrop-blur-2xl rounded-3xl p-8 border border-white/60 shadow-xl relative z-10">
+  <div class="text-center mb-8">
+    <div class="w-14 h-14 bg-gradient-to-br from-[#FF75BC] via-purple-500 to-[#50D8FF] rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg">
+      <i class="fa-solid fa-book-open-reader text-2xl text-white"></i>
+    </div>
+    <h1 class="text-2xl font-extrabold text-slate-800">Homework M.113</h1>
+    <p class="text-xs text-slate-400 mt-1 font-semibold text-pink-600">ระบบการบ้านห้อง M.113 (V.1.54)</p>
+  </div>
+  <div class="space-y-1.5 mb-6">
+    <label class="block text-[11px] font-bold text-slate-600">ชื่อผู้ใช้งาน (USERNAME)</label>
+    <input type="text" id="username" placeholder="พิมพ์ชื่อผู้ใช้งานของคุณ"
+      onkeydown="if(event.key==='Enter')login()"
+      class="w-full px-4 py-3 bg-slate-50 rounded-2xl border border-slate-200 text-xs font-semibold outline-none focus:border-[#FF75BC]">
+  </div>
+  <button id="login-btn" onclick="login()" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#FF75BC] to-rose-400 text-white font-bold text-xs shadow-lg">
+    เข้าสู่ระบบ
+  </button>
+</div>
+
+<!-- DASHBOARD -->
+<div id="main-page" class="hidden w-full max-w-md bg-white/85 backdrop-blur-2xl rounded-3xl p-5 border border-white/80 shadow-2xl relative z-10">
+  <div class="flex justify-between items-center pb-4 border-b border-slate-100 mb-4 gap-2">
+    <div class="flex items-center gap-1.5 flex-wrap">
+      <span class="font-extrabold text-[#FF75BC] text-lg">HOMEWORK</span>
+      <span class="bg-slate-800 text-white text-[10px] font-bold px-2 py-0.5 rounded-md">M113</span>
+      <span id="guest-badge" class="bg-pink-100 text-pink-700 text-[10px] font-bold px-2 py-0.5 rounded-md">MEMBER</span>
+    </div>
+    <div class="flex items-center gap-1.5">
+      <button onclick="openLogsModal()" id="btn-view-logs" title="ประวัติ" class="hidden text-xs bg-purple-100 text-purple-700 px-2.5 py-1.5 rounded-xl"><i class="fa-solid fa-clock-rotate-left"></i></button>
+      <button onclick="openManageModal()" id="btn-manage-history" title="จัดการตัวเลือก" class="hidden text-xs bg-sky-100 text-sky-700 px-2.5 py-1.5 rounded-xl"><i class="fa-solid fa-list-check"></i></button>
+      <button onclick="fetchAllData(true)" title="ซิงค์ข้อมูล" class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1.5 rounded-xl"><i class="fa-solid fa-rotate"></i></button>
+      <button onclick="logout()" class="text-xs bg-rose-50 text-rose-500 px-3 py-1.5 rounded-xl font-bold">LOGOUT</button>
+    </div>
+  </div>
+
+  <div class="space-y-2 mb-4">
+    <div class="flex bg-slate-100 p-1 rounded-2xl text-center text-xs font-bold gap-1">
+      <button id="tab-pending" onclick="switchTab('pending')" class="flex-1 py-2.5 rounded-xl bg-[#FF75BC] text-white">งานค้าง</button>
+      <button id="tab-calendar" onclick="switchTab('calendar')" class="flex-1 py-2.5 rounded-xl text-slate-500">ปฏิทินงาน</button>
+    </div>
+    <div id="creator-action-buttons" class="grid grid-cols-2 gap-2">
+      <button onclick="toggleAddForm()" class="py-2.5 rounded-2xl bg-[#FF75BC] text-white font-bold text-xs"><i class="fa-solid fa-plus"></i> เพิ่มงานค้าง</button>
+      <button onclick="openEventModal()" class="py-2.5 rounded-2xl bg-[#50D8FF] text-slate-900 font-extrabold text-xs"><i class="fa-solid fa-star"></i> สร้างกิจกรรม</button>
+    </div>
+  </div>
+
+  <div class="bg-slate-100 p-2.5 rounded-2xl flex items-center justify-between mb-4 text-xs">
+    <span class="bg-[#FF75BC] text-white text-[10px] font-bold px-2.5 py-1 rounded-xl">NOTICE</span>
+    <span id="notice-text" class="text-slate-500 text-[11px]">แสดงรายการการบ้านทั้งหมด</span>
+  </div>
+
+  <!-- CALENDAR -->
+  <div id="view-calendar" class="hidden space-y-4">
+    <div class="flex justify-between items-center bg-slate-50 p-3 rounded-2xl border">
+      <span class="text-xs font-extrabold text-slate-700">ปฏิทิน</span>
+      <div class="flex gap-1">
+        <button onclick="changeMonth(-1)" class="px-2.5 py-1 text-[11px] font-bold bg-white rounded-lg border">PREV</button>
+        <button onclick="changeMonth(1)" class="px-2.5 py-1 text-[11px] font-bold bg-white rounded-lg border">NEXT</button>
+      </div>
+    </div>
+    <div class="bg-white rounded-3xl p-4 border shadow-sm">
+      <h3 id="calendar-month-year" class="text-xs font-bold text-slate-800 mb-3"></h3>
+      <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-extrabold mb-2">
+        <span class="text-rose-500">SUN</span><span class="text-amber-500">MON</span><span class="text-pink-500">TUE</span><span class="text-emerald-500">WED</span><span class="text-orange-500">THU</span><span class="text-sky-500">FRI</span><span class="text-purple-500">SAT</span>
+      </div>
+      <div id="calendar-days" class="grid grid-cols-7 gap-1"></div>
+    </div>
+    <div class="bg-slate-50 p-4 rounded-3xl border space-y-3">
+      <div class="flex items-center justify-between">
+        <span id="selected-date-label" class="text-xs font-extrabold text-slate-700">รายการของวันที่เลือก</span>
+        <span id="selected-task-count" class="bg-sky-100 text-sky-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full">0 รายการ</span>
+      </div>
+      <div class="bg-sky-50 border border-sky-100 p-3 rounded-2xl space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-extrabold text-sky-900"><i class="fa-solid fa-star"></i> กิจกรรมในวันนี้</span>
+          <button onclick="openEventModal()" class="text-[10px] bg-[#50D8FF] px-2.5 py-1 rounded-xl font-bold">+ เพิ่มกิจกรรม</button>
+        </div>
+        <div id="event-list-view" class="space-y-1.5 max-h-[120px] overflow-y-auto"></div>
+      </div>
+      <div id="selected-date-tasks" class="space-y-2 max-h-[180px] overflow-y-auto"></div>
+    </div>
+  </div>
+
+  <!-- TASKS -->
+  <div id="view-tasks" class="space-y-4">
+    <div id="admin-form" class="hidden bg-slate-50 p-4 rounded-2xl border space-y-3">
+      <h3 class="text-xs font-bold text-slate-700"><i class="fa-solid fa-plus text-pink-500"></i> เพิ่มรายการการบ้าน</h3>
+      <div class="grid grid-cols-3 gap-2">
+        <input id="task-code" list="code-options" placeholder="รหัสวิชา" class="w-full p-2.5 text-xs bg-white rounded-xl border">
+        <datalist id="code-options"></datalist>
+        <input id="task-subject" list="subject-options" placeholder="ชื่อวิชา" class="col-span-2 w-full p-2.5 text-xs bg-white rounded-xl border">
+        <datalist id="subject-options"></datalist>
+      </div>
+      <input id="task-detail" placeholder="รายละเอียดการบ้าน" class="w-full p-2.5 text-xs bg-white rounded-xl border">
+      <div class="grid grid-cols-2 gap-2">
+        <label class="flex items-center bg-white border rounded-xl px-2 py-2"><span class="text-[11px] mr-1">วันสั่ง:</span><input type="date" id="assign-date-input" class="w-full text-xs"></label>
+        <label class="flex items-center bg-white border rounded-xl px-2 py-2"><span class="text-[11px] mr-1 text-rose-500">วันส่ง:</span><input type="date" id="due-date-input" class="w-full text-xs"></label>
+      </div>
+      <button id="add-task-btn" onclick="addTask()" class="w-full py-2.5 bg-[#FF75BC] text-white font-bold rounded-xl text-xs">บันทึกข้อมูล</button>
+    </div>
+    <div class="bg-amber-50 border border-amber-100 rounded-3xl p-4 space-y-3">
+      <div class="flex items-center gap-2 text-amber-800 text-xs font-bold"><i class="fa-solid fa-thumbtack text-amber-500"></i> ปักหมุดไว้</div>
+      <div id="pinned-list" class="space-y-2.5"></div>
+    </div>
+    <div class="space-y-2.5">
+      <div class="flex justify-between items-center">
+        <span class="text-xs font-extrabold text-slate-400">ROOM ACTIVE TASKS</span>
+        <span id="task-count" class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-full">0 ITEMS</span>
+      </div>
+      <div id="task-list" class="space-y-2.5 max-h-[300px] overflow-y-auto"></div>
+    </div>
+  </div>
+</div>
+
+<div class="flex-grow"></div>
+<footer class="py-4 text-center z-20 w-full"><span class="text-[11px] font-extrabold text-slate-500 bg-white/70 px-4 py-1.5 rounded-full border">Homework M.113</span></footer>
+
+<!-- SUCCESS POPUP -->
+<div id="success-popup" class="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-50 hidden p-4">
+  <div class="bg-white rounded-3xl p-6 w-80 text-center shadow-2xl animate-pop">
+    <div class="w-16 h-16 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl"><i class="fa-solid fa-circle-check"></i></div>
+    <h3 id="success-title" class="text-base font-extrabold text-slate-800 mb-1">บันทึกสำเร็จ</h3>
+    <p id="success-message" class="text-xs text-slate-400 mb-5">บันทึกข้อมูลเรียบร้อยแล้ว</p>
+    <button onclick="closeSuccessPopup()" class="w-full py-2.5 bg-emerald-500 text-white font-bold text-xs rounded-xl">ตกลง</button>
+  </div>
+</div>
+
+<!-- EVENT MODAL -->
+<div id="event-modal" class="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-50 hidden p-4">
+  <div class="bg-white rounded-3xl p-5 w-full max-w-sm shadow-2xl animate-pop space-y-4">
+    <div class="flex justify-between items-center border-b pb-3">
+      <h3 class="text-xs font-extrabold text-sky-900"><i class="fa-solid fa-star text-sky-400"></i> เพิ่มกิจกรรม</h3>
+      <button onclick="closeEventModal()" class="text-slate-400 text-xs">✕</button>
+    </div>
+    <span id="modal-date-label" class="text-[11px] font-bold text-slate-500 block">วันที่เลือก: -</span>
+    <input type="text" id="daily-event-input" placeholder="ชื่อกิจกรรม หรือวันสำคัญ..." class="w-full p-3 text-xs bg-slate-50 rounded-2xl border">
+    <button id="save-event-btn" onclick="saveDailyEvent()" class="w-full py-2.5 bg-[#50D8FF] text-slate-900 font-extrabold text-xs rounded-xl">บันทึกกิจกรรม</button>
+  </div>
+</div>
+
+<!-- ADMIN: ACTIVITY LOGS -->
+<div id="logs-modal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[60] hidden p-3">
+  <div class="bg-white rounded-3xl p-5 w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl animate-pop">
+    <div class="flex justify-between items-center border-b pb-3 mb-3">
+      <h3 class="font-extrabold text-sm text-purple-800"><i class="fa-solid fa-clock-rotate-left"></i> ประวัติการใช้งาน</h3>
+      <button onclick="closeModal('logs-modal')" class="text-slate-400 px-2">✕</button>
+    </div>
+    <div class="grid grid-cols-2 gap-2 mb-3">
+      <button onclick="clearLogs()" class="py-2.5 bg-rose-50 text-rose-600 rounded-xl text-xs font-bold"><i class="fa-solid fa-trash-can"></i> ล้างประวัติทั้งหมด</button>
+      <button onclick="loadLogs()" class="py-2.5 bg-purple-100 text-purple-700 rounded-xl text-xs font-bold"><i class="fa-solid fa-rotate"></i> โหลดใหม่</button>
+    </div>
+    <p id="logs-status" class="text-xs text-slate-500 mb-3">กำลังโหลด...</p>
+    <div id="logs-list" class="space-y-2"></div>
+  </div>
+</div>
+
+<!-- ADMIN: MANAGE OPTIONS -->
+<div id="manage-modal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[60] hidden p-3">
+  <div class="bg-white rounded-3xl p-5 w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl animate-pop">
+    <div class="flex justify-between items-center border-b pb-3 mb-3">
+      <h3 class="font-extrabold text-sm text-sky-800"><i class="fa-solid fa-list-check"></i> จัดการประวัติวิชาและรหัส</h3>
+      <button onclick="closeModal('manage-modal')" class="text-slate-400 px-2">✕</button>
+    </div>
+    <p class="text-[11px] text-slate-500 mb-3">ปิดตัวเลือกเพื่อซ่อนจากรายการแนะนำ โดยไม่ลบการบ้านเก่าออกจากชีต</p>
+    <div class="grid grid-cols-2 gap-3">
+      <div><h4 class="text-xs font-extrabold text-slate-700 mb-2">รหัสวิชา</h4><div id="manage-codes" class="space-y-2"></div></div>
+      <div><h4 class="text-xs font-extrabold text-slate-700 mb-2">ชื่อวิชา</h4><div id="manage-subjects" class="space-y-2"></div></div>
+    </div>
+    <p id="manage-status" class="text-xs text-slate-500 mt-3"></p>
+    <button onclick="loadOptions()" class="mt-3 w-full py-2 bg-sky-100 text-sky-700 rounded-xl text-xs font-bold">โหลดตัวเลือกใหม่</button>
+  </div>
+</div>
+
+<script>
 'use strict';
 
 const SCRIPT_URL = 'https://script.google.com/macros/s/' + 
@@ -168,6 +373,7 @@ async function login(){
   const btn=document.getElementById('login-btn');
   btn.disabled=true;
 
+  // ดึงรายชื่อสดจาก Google Sheets แทรกล่าสุด
   await fetchAllData(false);
 
   let user = allowedUsersList.find(u => u.username === raw);
@@ -462,3 +668,6 @@ async function disableOption(type,value){
     logActivity('disable_option',`ซ่อน ${type}: ${value}`);
   }catch(e){status.textContent='ดำเนินการไม่สำเร็จ: '+e.message;}
 }
+</script>
+</body>
+</html>
