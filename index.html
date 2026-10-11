@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Homework M.113 - V.1.53</title>
+<title>Homework M.113 - V.1.54</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -35,7 +35,7 @@ body{font-family:'Sarabun','Plus Jakarta Sans',sans-serif;background:linear-grad
       <i class="fa-solid fa-book-open-reader text-2xl text-white"></i>
     </div>
     <h1 class="text-2xl font-extrabold text-slate-800">Homework M.113</h1>
-    <p class="text-xs text-slate-400 mt-1 font-semibold text-pink-600">ระบบการบ้านห้อง M.113 (V.1.53)</p>
+    <p class="text-xs text-slate-400 mt-1 font-semibold text-pink-600">ระบบการบ้านห้อง M.113 (V.1.54)</p>
   </div>
   <div class="space-y-1.5 mb-6">
     <label class="block text-[11px] font-bold text-slate-600">ชื่อผู้ใช้งาน (USERNAME)</label>
@@ -176,13 +176,10 @@ body{font-family:'Sarabun','Plus Jakarta Sans',sans-serif;background:linear-grad
       <h3 class="font-extrabold text-sm text-purple-800"><i class="fa-solid fa-clock-rotate-left"></i> ประวัติการใช้งาน</h3>
       <button onclick="closeModal('logs-modal')" class="text-slate-400 px-2">✕</button>
     </div>
-    
-    <!-- ย้าย 2 ปุ่มมาไว้ด้านบนสุด -->
     <div class="grid grid-cols-2 gap-2 mb-3">
       <button onclick="clearLogs()" class="py-2.5 bg-rose-50 text-rose-600 rounded-xl text-xs font-bold"><i class="fa-solid fa-trash-can"></i> ล้างประวัติทั้งหมด</button>
       <button onclick="loadLogs()" class="py-2.5 bg-purple-100 text-purple-700 rounded-xl text-xs font-bold"><i class="fa-solid fa-rotate"></i> โหลดใหม่</button>
     </div>
-
     <p id="logs-status" class="text-xs text-slate-500 mb-3">กำลังโหลด...</p>
     <div id="logs-list" class="space-y-2"></div>
   </div>
@@ -208,45 +205,12 @@ body{font-family:'Sarabun','Plus Jakarta Sans',sans-serif;background:linear-grad
 <script>
 'use strict';
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1lacaaSbd6ZVh5jrD_s7yU1lmK6bmG_31yzUywyknR7xPZ7BDd_RLAygQHtgfvPRu/exec';
-
-const FALLBACK_USERS = [
-    { username: "doiinn_62030", role: "member", name: "Doiinn_62030" },
-    { username: "porsche_62031", role: "member", name: "Porsche_62031" },
-    { username: "captain_62032", role: "member", name: "Captain_62032" },
-    { username: "munich_62033", role: "member", name: "Munich_62033" },
-    { username: "kin_62034", role: "member", name: "Kin_62034" },
-    { username: "tonboon_62035", role: "member", name: "Tonboon_62035" },
-    { username: "plub_62036", role: "member", name: "Plub_62036" },
-    { username: "organ_62037", role: "member", name: "Organ_62037" },
-    { username: "kan_62038", role: "member", name: "Kan_62038" },
-    { username: "nodt_62039", role: "member", name: "Nodt_62039" },
-    { username: "nine_62040", role: "member", name: "Nine_62040" },
-    { username: "mark_62041", role: "member", name: "Mark_62041" },
-    { username: "near_62042", role: "member", name: "Near_62042" },
-    { username: "pp_62043", role: "member", name: "PP_62043" },
-    { username: "foreground_62044", role: "member", name: "Foreground_62044" },
-    { username: "nano_62045", role: "member", name: "Nano_62045" },
-    { username: "yoyo_62046", role: "member", name: "Yoyo_62046" },
-    { username: "barley_62047", role: "member", name: "Barley_62047" },
-    { username: "photo_62048", role: "admin", name: "Photo_62048" },
-    { username: "winwin_62049", role: "member", name: "Winwin_62049" },
-    { username: "pokpong_62050", role: "member", name: "Pokpong_62050" },
-    { username: "karn_62051", role: "member", name: "Karn_62051" },
-    { username: "lei-o_62052", role: "member", name: "Lei-O_62052" },
-    { username: "mac_62053", role: "member", name: "Mac_62053" },
-    { username: "quinn_62054", role: "member", name: "Quinn_62054" },
-    { username: "realma_62055", role: "member", name: "Realma_62055" },
-    { username: "tonkla_62056", role: "member", name: "Tonkla_62056" },
-    { username: "title_62057", role: "member", name: "Title_62057" },
-    { username: "kia_62058", role: "member", name: "Kia_62058" },
-    { username: "superpower", role: "admin", name: "Superpower" },
-    { username: "admin", role: "admin", name: "Admin" }
-];
+const SCRIPT_URL = 'https://script.google.com/macros/s/' + 
+                   'AKfycbw1lacaaSbd6ZVh5jrD_s7yU1lmK6bmG_31yzUywyknR7xPZ7BDd_RLAygQHtgfvPRu/exec';
 
 let currentRole='member', currentUsername='', currentTab='pending';
 let currentDate=new Date(), selectedDateStr=getFormattedDate(new Date());
-let tasks=[], dailyEvents={}, allowedUsersList=[...FALLBACK_USERS];
+let tasks=[], dailyEvents={}, allowedUsersList=[];
 let subjectOptions={codes:[],subjects:[]};
 
 let lastActivityTime = Date.now();
@@ -405,18 +369,19 @@ async function login(){
   const raw=document.getElementById('username').value.trim().toLowerCase();
   if(!raw){alert('กรุณากรอกชื่อผู้ใช้งาน');return;}
 
+  showLoading('กำลังตรวจสอบข้อมูลผู้ใช้...');
   const btn=document.getElementById('login-btn');
   btn.disabled=true;
 
-  const combinedList = [...allowedUsersList];
-  FALLBACK_USERS.forEach(fb => {
-    if(!combinedList.some(u => u.username === fb.username)) combinedList.push(fb);
-  });
+  // ดึงรายชื่อสดจาก Google Sheets แทรกล่าสุด
+  await fetchAllData(false);
 
-  let user = combinedList.find(u => u.username === raw);
+  let user = allowedUsersList.find(u => u.username === raw);
+  hideLoading();
+  btn.disabled=false;
+
   if(!user){
-    btn.disabled=false;
-    alert(`ไม่พบชื่อผู้ใช้งาน "${raw}" ในระบบ`);
+    alert(`ไม่พบชื่อผู้ใช้งาน "${raw}" ในระบบ (โปรดตรวจสอบรายชื่อในแท็บ Users บน Google Sheets)`);
     return;
   }
 
@@ -428,7 +393,6 @@ async function login(){
   localStorage.setItem('usernameKey',currentUsername);
   
   resetIdleTimer();
-  btn.disabled=false;
   openDashboard(user.name);
   logActivity('login','เข้าสู่ระบบสำเร็จ');
 }
@@ -669,7 +633,7 @@ async function clearLogs(){
 
 async function openManageModal(){
   if(currentRole!=='admin')return alert('ไม่มีสิทธิ์เข้าถึง');
-  document.getElementById('manage-modal').classList.remove('hidden');
+  document.getElementById('manage-modal').classList.add('hidden');
   loadOptions();
 }
 
