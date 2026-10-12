@@ -239,7 +239,7 @@ let currentRole = 'member', currentUsername = '', currentTab = 'pending', curren
 let tasks = [], dailyEvents = {}, codes = [], subjects = [], allowedUsersList = [];
 let lastActivityTime = Date.now();
 const IDLE_TIMEOUT_MS = 7 * 60 * 1000;
-const TOTAL_STUDENTS = 41;
+const TOTAL_STUDENTS = 40; // กำหนดจำนวนนักเรียนเป็น 40 คน
 
 function resetIdleTimer() { lastActivityTime = Date.now(); }
 ['click', 'touchstart', 'keypress', 'scroll', 'mousemove'].forEach(evt => { window.addEventListener(evt, resetIdleTimer, { passive: true }); });
@@ -315,6 +315,19 @@ async function fetchAllData(showAlert=false) {
   } finally { if (showAlert) hideLoading(); }
 }
 
+async function syncTasksToSheet() {
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'saveTasks', tasks: tasks })
+    });
+  } catch (e) {
+    console.error('Sync to Sheet Error:', e);
+  }
+}
+
 async function login() {
   const raw = document.getElementById('username').value.trim().toLowerCase();
   if (!raw) { alert('กรุณากรอกชื่อผู้ใช้งาน'); return; }
@@ -383,13 +396,13 @@ function renderTasks() {
   if (pinned.length === 0) {
     pinnedEl.innerHTML = '<p class="text-[11px] text-amber-600">ไม่มีรายการปักหมุด</p>';
   } else {
-    pinned.forEach(t => { pinnedEl.appendChild(createTaskCard(t)); });
+    pinned.forEach(t => { pinnedEl.appendChild(createTaskCard(t, true)); });
   }
 
   if (active.length === 0) {
     listEl.innerHTML = '<div class="text-center py-6 text-slate-400 text-xs">ไม่มีงานค้างในระบบ เยี่ยมมาก!</div>';
   } else {
-    active.forEach(t => { listEl.appendChild(createTaskCard(t)); });
+    active.forEach(t => { listEl.appendChild(createTaskCard(t, true)); });
   }
 
   if (tasks.length === 0) {
@@ -408,25 +421,68 @@ function renderTasks() {
   }
 }
 
-function createTaskCard(t) {
+function createTaskCard(t, showUnsubmittedIfOverdue = false) {
   const div = document.createElement('div');
-  div.className = "bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm flex items-start justify-between gap-2";
+  div.className = "bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-2";
   const isAdmin = currentRole === 'admin' || currentRole === 'creator';
   
+  let overdueSection = '';
+  if (showUnsubmittedIfOverdue && t.dueDate) {
+    const due = new Date(t.dueDate);
+    const now = new Date();
+    due.setHours(0,0,0,0);
+    now.setHours(0,0,0,0);
+    
+    // ถ้าเลยกำหนดส่งแล้ว
+    if (due < now) {
+      const submittedSet = new Set(Array.isArray(t.submitted) ? t.submitted.map(String) : []);
+      const extraSet = new Set(Array.isArray(t.extraUnsubmitted) ? t.extraUnsubmitted.map(String) : []);
+      const unsubmittedList = [];
+      for (let i = 1; i <= TOTAL_STUDENTS; i++) {
+        if (!submittedSet.has(String(i))) unsubmittedList.push(String(i));
+      }
+      extraSet.forEach(item => { if (!unsubmittedList.includes(item)) unsubmittedList.push(item); });
+
+      let badges = '';
+      if (unsubmittedList.length === 0) {
+        badges = '<span class="text-[10px] text-emerald-600 font-bold">ส่งครบทุกคนแล้ว! 🎉</span>';
+      } else {
+        badges = unsubmittedList.map(num => `
+          <span class="inline-flex items-center gap-1 bg-rose-50 text-rose-600 text-[10px] font-bold px-1.5 py-0.5 rounded-md border border-rose-100">
+            <button ${isAdmin ? `onclick="toggleStudentSubmit('${t.id}', '${num}')"` : ''} title="${isAdmin ? 'คลิกเปลี่ยนเป็นส่งแล้ว' : ''}" class="${isAdmin ? 'hover:text-emerald-600 cursor-pointer' : ''}">${escapeHtml(num)}</button>
+            ${isAdmin && extraSet.has(num) ? `<button onclick="removeExtraUnsubmitted('${t.id}', '${num}')" class="text-rose-400 hover:text-rose-700 ml-0.5">×</button>` : ''}
+          </span>
+        `).join('');
+      }
+
+      overdueSection = `
+        <div class="pt-2 mt-1 border-t border-rose-100 bg-rose-50/50 p-2 rounded-xl space-y-1">
+          <div class="flex items-center justify-between text-[10px] text-rose-700 font-bold">
+            <span><i class="fa-solid fa-triangle-exclamation"></i> เลยกำหนดส่งแล้ว (ยังไม่ส่ง ${unsubmittedList.length} คน)</span>
+          </div>
+          <div class="flex flex-wrap gap-1">${badges}</div>
+        </div>
+      `;
+    }
+  }
+
   div.innerHTML = `
-    <div class="space-y-1 flex-grow">
-      <div class="flex items-center gap-1.5">
-        <span class="bg-pink-100 text-pink-700 text-[10px] font-bold px-2 py-0.5 rounded-md">${escapeHtml(t.code)}</span>
-        <span class="text-xs font-bold text-slate-800">${escapeHtml(t.subject)}</span>
+    <div class="flex items-start justify-between gap-2">
+      <div class="space-y-1 flex-grow">
+        <div class="flex items-center gap-1.5">
+          <span class="bg-pink-100 text-pink-700 text-[10px] font-bold px-2 py-0.5 rounded-md">${escapeHtml(t.code)}</span>
+          <span class="text-xs font-bold text-slate-800">${escapeHtml(t.subject)}</span>
+        </div>
+        <p class="text-xs text-slate-600">${escapeHtml(t.detail)}</p>
+        <p class="text-[10px] text-slate-400">กำหนดส่ง: <span class="text-rose-500 font-bold">${formatThaiShortDate(t.dueDate)}</span></p>
       </div>
-      <p class="text-xs text-slate-600">${escapeHtml(t.detail)}</p>
-      <p class="text-[10px] text-slate-400">กำหนดส่ง: <span class="text-rose-500 font-bold">${formatThaiShortDate(t.dueDate)}</span></p>
+      ${isAdmin ? `
+      <div class="flex items-center gap-1 shrink-0">
+        <button onclick="togglePin('${t.id}')" title="ปักหมุด" class="text-xs px-2.5 py-1.5 rounded-xl ${t.isPinned ? 'bg-amber-500 text-white' : 'bg-amber-50 text-amber-600'}"><i class="fa-solid fa-thumbtack"></i></button>
+        <button onclick="deleteTask('${t.id}')" title="ลบงาน" class="text-xs bg-rose-50 text-rose-500 px-2.5 py-1.5 rounded-xl"><i class="fa-solid fa-trash-can"></i></button>
+      </div>` : ''}
     </div>
-    ${isAdmin ? `
-    <div class="flex items-center gap-1 shrink-0">
-      <button onclick="togglePin('${t.id}')" title="ปักหมุด" class="text-xs px-2.5 py-1.5 rounded-xl ${t.isPinned ? 'bg-amber-500 text-white' : 'bg-amber-50 text-amber-600'}"><i class="fa-solid fa-thumbtack"></i></button>
-      <button onclick="deleteTask('${t.id}')" title="ลบงาน" class="text-xs bg-rose-50 text-rose-500 px-2.5 py-1.5 rounded-xl"><i class="fa-solid fa-trash-can"></i></button>
-    </div>` : ''}
+    ${overdueSection}
   `;
   return div;
 }
@@ -520,6 +576,7 @@ function toggleStudentSubmit(taskId, numStr) {
   cacheTasks();
   renderTasks();
   selectDate(selectedDateStr);
+  syncTasksToSheet();
 }
 
 function toggleTrackingAddForm() {
@@ -551,6 +608,7 @@ async function addTrackingTask() {
   renderCalendar();
   toggleTrackingAddForm();
   showSuccess('บันทึกสำเร็จ', 'เพิ่มรายการการบ้านเรียบร้อยแล้ว');
+  syncTasksToSheet();
 }
 
 function submitExtraStudent() {
@@ -570,6 +628,7 @@ function submitExtraStudent() {
     document.getElementById('extra-student-name').value = '';
     toggleTrackingAddStudentForm();
     showSuccess('สำเร็จ', 'เพิ่มรายชื่อคนค้างงานเรียบร้อยแล้ว');
+    syncTasksToSheet();
   } else {
     alert('มีรายชื่อนี้อยู่แล้ว');
   }
@@ -582,6 +641,7 @@ function removeExtraUnsubmitted(taskId, val) {
   cacheTasks();
   renderTasks();
   selectDate(selectedDateStr);
+  syncTasksToSheet();
 }
 
 function togglePin(id) {
@@ -593,6 +653,7 @@ function togglePin(id) {
     renderCalendar();
     selectDate(selectedDateStr);
     showSuccess('สำเร็จ', task.isPinned ? 'ปักหมุดงานเรียบร้อยแล้ว' : 'ยกเลิกปักหมุดเรียบร้อยแล้ว');
+    syncTasksToSheet();
   }
 }
 
@@ -604,6 +665,7 @@ function deleteTask(id) {
   renderCalendar();
   selectDate(selectedDateStr);
   showSuccess('ลบสำเร็จ', 'ลบรายการการบ้านเรียบร้อยแล้ว');
+  syncTasksToSheet();
 }
 
 function renderCalendar() {
@@ -647,7 +709,7 @@ function selectDate(dateStr) {
   if (dateTasks.length === 0) {
     container.innerHTML = '<p class="text-[11px] text-slate-400 text-center py-2">ไม่มีรายการในวันนี้</p>';
   } else {
-    dateTasks.forEach(t => { container.appendChild(createTaskCard(t)); });
+    dateTasks.forEach(t => { container.appendChild(createTaskCard(t, false)); });
   }
 
   const eventView = document.getElementById('event-list-view');
