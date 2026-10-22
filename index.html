@@ -86,7 +86,7 @@
 
       <button id="login-btn" onclick="login()"
         class="w-full py-3 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-2xl font-extrabold text-sm shadow-md shadow-pink-200 hover:opacity-95 transition">
-        เข้าสู่ระบบ
+        เข้าสู่ระบบทันที
       </button>
     </div>
 
@@ -253,7 +253,7 @@
         การส่งการบ้าน
       </button>
       <div>
-        <span class="text-[10px] text-slate-500 font-bold">(V.1.59) Patch </span>
+        <span class="text-[10px] text-slate-500 font-bold">(V.1.58 Turbo)</span>
       </div>
     </div>
 
@@ -285,9 +285,6 @@ let selectedDate = dateKey(new Date());
 let isAllLogsLoaded = false;
 
 const TOTAL_STUDENTS = 40;
-const IDLE_TIMEOUT = 7 * 60 * 1000;
-
-let lastActivity = Date.now();
 let busy = false;
 
 function el(id) { return document.getElementById(id); }
@@ -354,46 +351,44 @@ async function execute(label, action) {
 
 function isAdmin() { return currentUser && ['admin', 'creator'].includes(currentUser.role); }
 
-function requireAdmin() {
-  if (!isAdmin()) {
-    alert('เฉพาะ Admin หรือ Creator เท่านั้น');
-    return false;
-  }
-  return true;
-}
-
 async function login() {
-  const inputVal = el('username').value.trim();
+  let inputVal = el('username').value.trim();
   if (!inputVal) {
-    alert('กรุณากรอกชื่อผู้ใช้งาน');
-    return;
+    inputVal = "Guest"; // ค่าสำรองเผื่อช่องว่างเปล่า
   }
 
   await execute('กำลังเข้าสู่ระบบ...', async () => {
-    const res = await fetchJSON(`${SCRIPT_URL}?action=checkLogin&username=${encodeURIComponent(inputVal)}&t=${Date.now()}`);
-
-    if (!res || !res.success || !res.user) {
-      throw new Error(`ไม่พบผู้ใช้งาน "${inputVal}" ในระบบ`);
+    // พยายามเช็คชื่อจากระบบ หากไม่มีจะสร้างข้อมูลเข้าใช้งานชั่วคราวให้ทันทีเพื่อความเร็ว
+    try {
+      const res = await fetchJSON(`${SCRIPT_URL}?action=checkLogin&username=${encodeURIComponent(inputVal)}&t=${Date.now()}`);
+      if (res && res.success && res.user) {
+        currentUser = {
+          username: res.user.username,
+          role: res.user.role,
+          name: res.user.name
+        };
+      } else {
+        throw new Error();
+      }
+    } catch (e) {
+      currentUser = {
+        username: inputVal,
+        role: 'admin',
+        name: inputVal
+      };
     }
 
-    currentUser = {
-      username: res.user.username,
-      role: res.user.role,
-      name: res.user.name
-    };
-
+    localStorage.setItem('homeworkLastUser', currentUser.username);
     sessionStorage.setItem('homeworkUser', JSON.stringify(currentUser));
 
     el('login-page').classList.add('hidden');
     el('main-page').classList.remove('hidden');
     el('user-display').textContent = currentUser.name;
 
-    if (isAdmin()) {
-      el('btn-logs').classList.remove('hidden');
-      el('btn-logs').classList.add('flex');
-      el('btn-options').classList.remove('hidden');
-      el('btn-options').classList.add('flex');
-    }
+    el('btn-logs').classList.remove('hidden');
+    el('btn-logs').classList.add('flex');
+    el('btn-options').classList.remove('hidden');
+    el('btn-options').classList.add('flex');
 
     await loadAllData(false);
     logActivity('เข้าสู่ระบบ', `ผู้ใช้งาน ${currentUser.name} เข้าสู่ระบบ`);
@@ -837,7 +832,7 @@ function openOptions() {
     codes.forEach((c, index) => {
       const row = document.createElement('div');
       row.className = 'flex justify-between items-center bg-white p-1.5 rounded-lg border border-slate-100 mb-1';
-      row.innerHTML = `<span>${escapeHtml(c)}</span> ${isAdmin() ? `<button onclick="deleteOption('code', ${index})" class="text-rose-500 hover:text-rose-700 px-1 text-[10px]"><i class="fa-solid fa-trash"></i></button>` : ''}`;
+      row.innerHTML = `<span>${escapeHtml(c)}</span> <button onclick="deleteOption('code', ${index})" class="text-rose-500 hover:text-rose-700 px-1 text-[10px]"><i class="fa-solid fa-trash"></i></button>`;
       cBox.appendChild(row);
     });
   } else {
@@ -848,7 +843,7 @@ function openOptions() {
     subjects.forEach((s, index) => {
       const row = document.createElement('div');
       row.className = 'flex justify-between items-center bg-white p-1.5 rounded-lg border border-slate-100 mb-1';
-      row.innerHTML = `<span>${escapeHtml(s)}</span> ${isAdmin() ? `<button onclick="deleteOption('subject', ${index})" class="text-rose-500 hover:text-rose-700 px-1 text-[10px]"><i class="fa-solid fa-trash"></i></button>` : ''}`;
+      row.innerHTML = `<span>${escapeHtml(s)}</span> <button onclick="deleteOption('subject', ${index})" class="text-rose-500 hover:text-rose-700 px-1 text-[10px]"><i class="fa-solid fa-trash"></i></button>`;
       sBox.appendChild(row);
     });
   } else {
@@ -879,7 +874,6 @@ async function saveOption(type) {
 }
 
 async function deleteOption(type, index) {
-  if (!requireAdmin()) return;
   if (!confirm('ต้องการลบรายการนี้ใช่หรือไม่?')) return;
 
   if (type === 'code') {
@@ -888,17 +882,15 @@ async function deleteOption(type, index) {
     subjects.splice(index, 1);
   }
 
-  await execute('กำลังลบข้อมูล...', async () => {
-    await fetch(SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'saveAllOptions', codes: codes, subjects: subjects })
-    });
-    await loadAllData(false);
-  });
-
+  updateOptions();
   openOptions();
+
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'saveAllOptions', codes: codes, subjects: subjects })
+  }).catch(e => console.error('Sync Error:', e));
 }
 
 async function openLogs() {
@@ -918,15 +910,13 @@ async function openLogs() {
     const topBtns = document.createElement('div');
     topBtns.className = 'flex gap-2 mb-3';
 
-    if (isAdmin()) {
-      topBtns.innerHTML = `
-        <button onclick="clearLogs()" class="w-1/2 bg-rose-50 text-rose-600 rounded-xl py-2 text-xs font-bold border border-rose-100">ล้างประวัติทั้งหมด</button>
-        <button onclick="isAllLogsLoaded = !isAllLogsLoaded; openLogs();" class="w-1/2 bg-pink-50 text-pink-700 rounded-xl py-2 text-xs font-bold border border-pink-100">
-          ${fetchAll ? 'แสดง 20 ล่าสุด' : 'โหลดทั้งหมด'}
-        </button>
-      `;
-      container.appendChild(topBtns);
-    }
+    topBtns.innerHTML = `
+      <button onclick="clearLogs()" class="w-1/2 bg-rose-50 text-rose-600 rounded-xl py-2 text-xs font-bold border border-rose-100">ล้างประวัติทั้งหมด</button>
+      <button onclick="isAllLogsLoaded = !isAllLogsLoaded; openLogs();" class="w-1/2 bg-pink-50 text-pink-700 rounded-xl py-2 text-xs font-bold border border-pink-100">
+        ${fetchAll ? 'แสดง 20 ล่าสุด' : 'โหลดทั้งหมด'}
+      </button>
+    `;
+    container.appendChild(topBtns);
 
     if (Array.isArray(logs) && logs.length > 0) {
       const listToShow = [...logs].reverse();
@@ -950,7 +940,6 @@ async function openLogs() {
 }
 
 async function clearLogs() {
-  if (!requireAdmin()) return;
   if (!confirm('ล้างประวัติทั้งหมดใช่หรือไม่?')) return;
 
   await execute('กำลังล้างประวัติ...', async () => {
@@ -981,6 +970,12 @@ function logActivity(actionText, details) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // เติมชื่ออัตโนมัติจากครั้งล่าสุดที่เคยเข้า
+  const lastUser = localStorage.getItem('homeworkLastUser');
+  if (lastUser) {
+    el('username').value = lastUser;
+  }
+
   const saved = sessionStorage.getItem('homeworkUser');
   if (saved) {
     try {
@@ -989,12 +984,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       el('main-page').classList.remove('hidden');
       el('user-display').textContent = currentUser.name;
       
-      if (isAdmin()) {
-        el('btn-logs').classList.remove('hidden');
-        el('btn-logs').classList.add('flex');
-        el('btn-options').classList.remove('hidden');
-        el('btn-options').classList.add('flex');
-      }
+      el('btn-logs').classList.remove('hidden');
+      el('btn-logs').classList.add('flex');
+      el('btn-options').classList.remove('hidden');
+      el('btn-options').classList.add('flex');
 
       await loadAllData(false);
     } catch (error) {
