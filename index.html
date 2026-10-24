@@ -249,11 +249,11 @@
 
     <!-- ปุ่มการส่งการบ้านและเวอร์ชันด้านล่างสุด -->
     <div class="w-full text-center pb-2 space-y-2">
-      <button onclick="alert('ระบบส่งการบ้านเปิดใช้งานปกติ')" class="bg-white/95 backdrop-blur-md text-slate-700 text-xs font-bold px-8 py-2.5 rounded-full border border-white shadow-sm hover:bg-white transition">
+      <button onclick="showAlert('ระบบส่งการบ้านเปิดใช้งานปกติ')" class="bg-white/95 backdrop-blur-md text-slate-700 text-xs font-bold px-8 py-2.5 rounded-full border border-white shadow-sm hover:bg-white transition">
         การส่งการบ้าน
       </button>
       <div>
-        <span class="text-[10px] text-slate-500 font-bold">(V.1.58 Smile Face)</span>
+        <span class="text-[10px] text-slate-500 font-bold">(V.1.69 Stable POST Sync)</span>
       </div>
     </div>
 
@@ -269,10 +269,22 @@
     </div>
   </div>
 
+  <!-- Custom Alert Modal -->
+  <div id="custom-alert" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[120] hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 w-full max-w-xs animate-pop shadow-2xl text-center">
+      <div class="w-12 h-12 mx-auto bg-pink-50 text-pink-500 rounded-2xl flex items-center justify-center text-xl mb-3 shadow-inner">
+        <i class="fa-solid fa-circle-info"></i>
+      </div>
+      <h3 class="font-extrabold text-sm text-slate-800 mb-1">แจ้งเตือน</h3>
+      <p id="alert-text" class="text-xs text-slate-500 font-semibold mb-5"></p>
+      <button onclick="closeAlert()" class="w-full bg-pink-500 text-white py-2.5 rounded-xl text-xs font-extrabold hover:bg-pink-600 transition shadow-sm">ปิด</button>
+    </div>
+  </div>
+
 <script>
 'use strict';
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwe3KvdPOBpzlJLdGQLfFm2u1pkTKkT5idgIG79IVg944QI69imwWY52MKs2nu5aZbvDw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxPMdLygwBXKBmasT3GM-MsfhlPvaVpd31_epFbbcNFWyGghIBLEevaZO0b5Rbq9c2iQA/exec';
 
 let currentUser = null;
 let tasks = [];
@@ -288,6 +300,15 @@ const TOTAL_STUDENTS = 40;
 let busy = false;
 
 function el(id) { return document.getElementById(id); }
+
+function showAlert(message) {
+  el('alert-text').textContent = message;
+  el('custom-alert').classList.remove('hidden');
+}
+
+function closeAlert() {
+  el('custom-alert').classList.add('hidden');
+}
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -325,10 +346,19 @@ function setStatus(message, success = true) {
     (success ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100');
 }
 
-async function fetchJSON(url) {
-  const res = await fetch(url, { method: 'GET', redirect: 'follow' });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return await res.json();
+async function fetchJSON(url, timeoutMs = 12000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { method: 'GET', redirect: 'follow', signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') throw new Error('การเชื่อมต่อหมดเวลา (Timeout)');
+    throw err;
+  }
 }
 
 async function execute(label, action) {
@@ -341,7 +371,7 @@ async function execute(label, action) {
   } catch (error) {
     console.error(error);
     setStatus('ผิดพลาด: ' + error.message, false);
-    alert('เกิดข้อผิดพลาด:\n' + error.message);
+    showAlert(error.message || 'เกิดข้อผิดพลาด');
     return false;
   } finally {
     busy = false;
@@ -351,83 +381,112 @@ async function execute(label, action) {
 
 function isAdmin() { return currentUser && ['admin', 'creator'].includes(currentUser.role); }
 
-async function login() {
-  let inputVal = el('username').value.trim();
-  if (!inputVal) {
-    inputVal = "Guest"; // ค่าสำรองเผื่อช่องว่างเปล่า
-  }
-
-  await execute('กำลังเข้าสู่ระบบ...', async () => {
-    // พยายามเช็คชื่อจากระบบ หากไม่มีจะสร้างข้อมูลเข้าใช้งานชั่วคราวให้ทันทีเพื่อความเร็ว
-    try {
-      const res = await fetchJSON(`${SCRIPT_URL}?action=checkLogin&username=${encodeURIComponent(inputVal)}&t=${Date.now()}`);
-      if (res && res.success && res.user) {
-        currentUser = {
-          username: res.user.username,
-          role: res.user.role,
-          name: res.user.name
-        };
-      } else {
-        throw new Error();
-      }
-    } catch (e) {
-      currentUser = {
-        username: inputVal,
-        role: 'admin',
-        name: inputVal
-      };
-    }
-
-    localStorage.setItem('homeworkLastUser', currentUser.username);
-    sessionStorage.setItem('homeworkUser', JSON.stringify(currentUser));
-
-    el('login-page').classList.add('hidden');
-    el('main-page').classList.remove('hidden');
-    el('user-display').textContent = currentUser.name;
-
+function updateAdminUI() {
+  const isUserAdmin = isAdmin();
+  if (isUserAdmin) {
     el('btn-logs').classList.remove('hidden');
     el('btn-logs').classList.add('flex');
     el('btn-options').classList.remove('hidden');
     el('btn-options').classList.add('flex');
+  } else {
+    el('btn-logs').classList.add('hidden');
+    el('btn-logs').classList.remove('flex');
+    el('btn-options').classList.add('hidden');
+    el('btn-options').classList.remove('flex');
+  }
+}
 
-    await loadAllData(false);
-    logActivity('เข้าสู่ระบบ', `ผู้ใช้งาน ${currentUser.name} เข้าสู่ระบบ`);
+async function login() {
+  let inputVal = el('username').value.trim();
+  if (!inputVal) {
+    showAlert('กรุณากรอกชื่อผู้ใช้งาน');
+    return;
+  }
+
+  if (inputVal.toLowerCase() === 'admin') {
+    showAlert('ไม่พบบัญชี');
+    return;
+  }
+
+  await execute('กำลังตรวจสอบสิทธิ์...', async () => {
+    const res = await fetchJSON(`${SCRIPT_URL}?action=checkLogin&username=${encodeURIComponent(inputVal)}&t=${Date.now()}`);
+    
+    if (res && res.success && res.user) {
+      currentUser = {
+        username: res.user.username,
+        role: res.user.role,
+        name: res.user.name
+      };
+
+      localStorage.setItem('homeworkLastUser', currentUser.username);
+      sessionStorage.setItem('homeworkUser', JSON.stringify(currentUser));
+
+      el('login-page').classList.add('hidden');
+      el('main-page').classList.remove('hidden');
+      el('user-display').textContent = currentUser.name;
+
+      updateAdminUI();
+
+      await loadAllData(false);
+      logActivity('เข้าสู่ระบบ', `ผู้ใช้งาน ${currentUser.name} เข้าสู่ระบบสำเร็จ`);
+    } else {
+      throw new Error(res.error || 'ไม่พบบัญชี');
+    }
   });
 }
 
 function logout() {
+  logActivity('ออกจากระบบ', `ผู้ใช้งาน ${currentUser ? currentUser.name : 'Unknown'} ออกจากระบบ`);
   currentUser = null;
   sessionStorage.removeItem('homeworkUser');
+  localStorage.removeItem('homeworkCacheData');
   location.reload();
 }
 
 async function loadAllData(showMessage = false) {
+  const cachedData = localStorage.getItem('homeworkCacheData');
+  if (cachedData) {
+    try {
+      const parsed = JSON.parse(cachedData);
+      tasks = parsed.tasks || [];
+      dailyEvents = parsed.events || {};
+      codes = parsed.options?.codes || [];
+      subjects = parsed.options?.subjects || [];
+      updateOptions();
+      renderTasks();
+      renderCalendar();
+      selectDate(selectedDate);
+    } catch(e) {}
+  }
+
   const load = async () => {
-    const [tasksRes, eventsRes, optionsRes] = await Promise.allSettled([
-      fetchJSON(`${SCRIPT_URL}?t=${Date.now()}`),
-      fetchJSON(`${SCRIPT_URL}?action=getEvents&t=${Date.now()}`),
-      fetchJSON(`${SCRIPT_URL}?action=getOptions&t=${Date.now()}`)
-    ]);
+    const res = await fetchJSON(`${SCRIPT_URL}?t=${Date.now()}`);
+    if (res) {
+      tasks = Array.isArray(res.tasks) ? res.tasks : [];
+      dailyEvents = res.events || {};
+      codes = res.options?.codes || [];
+      subjects = res.options?.subjects || [];
 
-    tasks = (tasksRes.status === 'fulfilled' && Array.isArray(tasksRes.value)) ? tasksRes.value : [];
-    dailyEvents = (eventsRes.status === 'fulfilled' && eventsRes.value) ? eventsRes.value : {};
-    
-    if (optionsRes.status === 'fulfilled' && optionsRes.value) {
-      codes = optionsRes.value.codes || [];
-      subjects = optionsRes.value.subjects || [];
+      localStorage.setItem('homeworkCacheData', JSON.stringify(res));
+
+      updateOptions();
+      renderTasks();
+      renderCalendar();
+      selectDate(selectedDate);
+
+      setStatus('ซิงค์ข้อมูลสำเร็จ • ' + new Date().toLocaleTimeString('th-TH'));
+      if (showMessage) showAlert('ซิงค์ข้อมูลสำเร็จ');
     }
-
-    updateOptions();
-    renderTasks();
-    renderCalendar();
-    selectDate(selectedDate);
-
-    setStatus('ซิงค์ข้อมูลสำเร็จ • ' + new Date().toLocaleTimeString('th-TH'));
-    if (showMessage) alert('ซิงค์ข้อมูลสำเร็จ');
   };
 
   if (busy) await load();
-  else await execute('กำลังซิงค์ข้อมูล...', load);
+  else {
+    if (!cachedData) {
+      await execute('กำลังซิงค์ข้อมูล...', load);
+    } else {
+      load().catch(e => console.error(e));
+    }
+  }
 }
 
 function switchTab(tab) {
@@ -534,9 +593,19 @@ function createTrackingCard(task) {
   const percent = total ? Math.round(completed / total * 100) : 0;
 
   div.innerHTML = `
-    <div>
-      <h3 class="font-extrabold text-xs text-slate-800">${escapeHtml(task.subject)}</h3>
-      <p class="text-[11px] text-slate-600 mt-0.5 font-medium">${escapeHtml(task.detail)}</p>
+    <div class="flex justify-between items-start gap-2">
+      <div>
+        <h3 class="font-extrabold text-xs text-slate-800">${escapeHtml(task.subject)}</h3>
+        <p class="text-[11px] text-slate-600 mt-0.5 font-medium">${escapeHtml(task.detail)}</p>
+      </div>
+      <div class="flex gap-1.5">
+        <button data-action="pin" class="text-amber-500 hover:text-amber-600 p-1" title="ปักหมุด">
+          <i class="fa-solid fa-thumbtack"></i>
+        </button>
+        <button data-action="delete" class="text-rose-500 hover:text-rose-600 p-1" title="ลบ">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>
     </div>
 
     <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
@@ -550,6 +619,9 @@ function createTrackingCard(task) {
 
     <div class="flex flex-wrap gap-1 pt-1" data-students></div>
   `;
+
+  div.querySelector('[data-action="pin"]').onclick = () => togglePin(task.id);
+  div.querySelector('[data-action="delete"]').onclick = () => deleteTask(task.id);
 
   const students = div.querySelector('[data-students]');
   unsubmitted.forEach(number => {
@@ -570,6 +642,21 @@ function toggleForm(id) {
   if(el(id)) el(id).classList.toggle('hidden');
 }
 
+async function sendSaveRequest(action, payloadData = null) {
+  let bodyData = { action: action };
+  if (action === 'saveTasks') bodyData.tasks = payloadData;
+  if (action === 'saveEvents') bodyData.events = payloadData;
+
+  await fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(bodyData)
+  });
+
+  await new Promise(resolve => setTimeout(resolve, 1500));
+}
+
 async function addTask() {
   const task = {
     id: String(Date.now()),
@@ -584,29 +671,29 @@ async function addTask() {
   };
 
   if (!task.code || !task.subject || !task.detail || !task.dueDate) {
-    alert('กรุณากรอกข้อมูลให้ครบ');
+    showAlert('กรุณากรอกข้อมูลให้ครบ');
     return;
   }
 
-  tasks.unshift(task);
+  const updatedTasks = [task, ...tasks];
 
   const success = await execute('กำลังบันทึกการบ้าน...', async () => {
-    await fetch(SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'saveTasks', tasks: tasks })
-    });
+    await sendSaveRequest('saveTasks', updatedTasks);
   });
 
   if (success) {
+    tasks = updatedTasks;
+    const cachedData = JSON.parse(localStorage.getItem('homeworkCacheData') || '{}');
+    cachedData.tasks = tasks;
+    localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
+
     ['task-code', 'task-subject', 'task-detail', 'task-assign-date', 'task-due-date'].forEach(id => el(id).value = '');
     el('task-form').classList.add('hidden');
     renderTasks();
     renderCalendar();
     selectDate(selectedDate);
     setStatus('บันทึกการบ้านเรียบร้อย');
-    logActivity('เพิ่มการบ้าน', `${task.code} - ${task.subject}`);
+    logActivity('เพิ่มการบ้าน', `วิชา ${task.subject} (${task.code}) - ${task.detail}`);
   }
 }
 
@@ -615,16 +702,18 @@ async function togglePin(id) {
   if (task) {
     task.isPinned = !task.isPinned;
     renderTasks();
-    fetch(SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'saveTasks', tasks: tasks })
-    });
+    
+    const cachedData = JSON.parse(localStorage.getItem('homeworkCacheData') || '{}');
+    cachedData.tasks = tasks;
+    localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
+
+    sendSaveRequest('saveTasks', tasks);
+    logActivity(task.isPinned ? 'ปักหมุดการบ้าน' : 'ยกเลิกปักหมุด', `วิชา ${task.subject}`);
   }
 }
 
 async function deleteTask(id) {
+  const task = tasks.find(t => String(t.id) === String(id));
   if (!confirm('ต้องการลบการบ้านนี้ใช่หรือไม่?')) return;
 
   tasks = tasks.filter(t => String(t.id) !== String(id));
@@ -632,12 +721,15 @@ async function deleteTask(id) {
   renderCalendar();
   selectDate(selectedDate);
 
-  fetch(SCRIPT_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'saveTasks', tasks: tasks })
-  });
+  const cachedData = JSON.parse(localStorage.getItem('homeworkCacheData') || '{}');
+  cachedData.tasks = tasks;
+  localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
+
+  sendSaveRequest('saveTasks', tasks);
+
+  if (task) {
+    logActivity('ลบการบ้าน', `วิชา ${task.subject} - ${task.detail}`);
+  }
 }
 
 async function toggleStudent(taskId, number) {
@@ -647,18 +739,21 @@ async function toggleStudent(taskId, number) {
 
   const numStr = String(number);
   const idx = task.submitted.indexOf(numStr);
-  if (idx > -1) task.submitted.splice(idx, 1);
+  const isSubmitted = idx === -1;
+  
+  if (!isSubmitted) task.submitted.splice(idx, 1);
   else task.submitted.push(numStr);
 
   renderTasks();
   selectDate(selectedDate);
 
-  fetch(SCRIPT_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'saveTasks', tasks: tasks })
-  });
+  const cachedData = JSON.parse(localStorage.getItem('homeworkCacheData') || '{}');
+  cachedData.tasks = tasks;
+  localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
+
+  sendSaveRequest('saveTasks', tasks);
+
+  logActivity('เปลี่ยนสถานะส่งงาน', `เลขที่ ${numStr} วิชา ${task.subject} (${isSubmitted ? 'ส่งแล้ว' : 'ยังไม่ส่ง'})`);
 }
 
 async function addExtraStudent() {
@@ -673,12 +768,13 @@ async function addExtraStudent() {
   if (!task.extraUnsubmitted.includes(number)) {
     task.extraUnsubmitted.push(number);
     renderTasks();
-    fetch(SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'saveTasks', tasks: tasks })
-    });
+    
+    const cachedData = JSON.parse(localStorage.getItem('homeworkCacheData') || '{}');
+    cachedData.tasks = tasks;
+    localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
+
+    sendSaveRequest('saveTasks', tasks);
+    logActivity('เพิ่มรายชื่อคนค้างงาน', `เลขที่ ${number} ในวิชา ${task.subject}`);
   }
 
   el('student-number').value = '';
@@ -753,12 +849,13 @@ async function addEvent() {
   el('event-input').value = '';
   el('event-form').classList.add('hidden');
 
-  fetch(SCRIPT_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'saveEvents', events: dailyEvents })
-  });
+  const cachedData = JSON.parse(localStorage.getItem('homeworkCacheData') || '{}');
+  cachedData.events = dailyEvents;
+  localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
+
+  sendSaveRequest('saveEvents', dailyEvents);
+
+  logActivity('เพิ่มกิจกรรม', `วันที่ ${formatDate(selectedDate)}: ${event}`);
 }
 
 function updateOptions() {
@@ -787,30 +884,24 @@ function openModal(title, content) {
 function closeModal() { el('modal').classList.add('hidden'); }
 
 function openOptions() {
+  if (!isAdmin()) {
+    showAlert('คุณไม่มีสิทธิ์เข้าถึงส่วนนี้');
+    return;
+  }
+
   const content = `
     <div class="space-y-3">
-      <p class="text-[11px] text-slate-600 font-semibold">รายการรหัสวิชาและชื่อวิชาทั้งหมดที่มีในระบบปัจจุบัน</p>
+      <p class="text-[11px] text-slate-600 font-semibold">รายการรหัสวิชาและชื่อวิชาทั้งหมดในระบบ (จัดการเพิ่ม/ลบผ่าน Google Sheets)</p>
 
       <div class="grid grid-cols-2 gap-2">
         <div class="bg-slate-50 p-2.5 rounded-2xl border">
           <h4 class="font-extrabold text-[11px] text-slate-700 mb-1">รหัสวิชา</h4>
-          <div id="option-codes" class="text-xs space-y-1 max-h-[120px] overflow-y-auto font-medium text-slate-700"></div>
+          <div id="option-codes" class="text-xs space-y-1 max-h-[180px] overflow-y-auto font-medium text-slate-700"></div>
         </div>
 
         <div class="bg-slate-50 p-2.5 rounded-2xl border">
           <h4 class="font-extrabold text-[11px] text-slate-700 mb-1">ชื่อวิชา</h4>
-          <div id="option-subjects" class="text-xs space-y-1 max-h-[120px] overflow-y-auto font-medium text-slate-700"></div>
-        </div>
-      </div>
-
-      <div class="pt-2 space-y-3 border-t">
-        <div class="space-y-1.5">
-          <input id="new-code" class="w-full border rounded-xl p-2 text-xs bg-white" placeholder="รหัสวิชาใหม่">
-          <button onclick="saveOption('code')" class="w-full bg-pink-500 text-white py-2 rounded-xl text-xs font-extrabold hover:opacity-95 transition">เพิ่มเฉพาะรหัสวิชา</button>
-        </div>
-        <div class="space-y-1.5 pt-1 border-t border-dashed">
-          <input id="new-subject" class="w-full border rounded-xl p-2 text-xs bg-white" placeholder="ชื่อวิชาใหม่">
-          <button onclick="saveOption('subject')" class="w-full bg-pink-500 text-white py-2 rounded-xl text-xs font-extrabold hover:opacity-95 transition">เพิ่มเฉพาะชื่อวิชา</button>
+          <div id="option-subjects" class="text-xs space-y-1 max-h-[180px] overflow-y-auto font-medium text-slate-700"></div>
         </div>
       </div>
 
@@ -820,7 +911,7 @@ function openOptions() {
     </div>
   `;
 
-  openModal('จัดการประวัติวิชาและรหัส', content);
+  openModal('รายการรหัสวิชาและชื่อวิชา', content);
 
   const cBox = el('option-codes');
   const sBox = el('option-subjects');
@@ -829,10 +920,10 @@ function openOptions() {
   sBox.innerHTML = '';
 
   if (codes.length) {
-    codes.forEach((c, index) => {
+    codes.forEach(c => {
       const row = document.createElement('div');
-      row.className = 'flex justify-between items-center bg-white p-1.5 rounded-lg border border-slate-100 mb-1';
-      row.innerHTML = `<span>${escapeHtml(c)}</span> <button onclick="deleteOption('code', ${index})" class="text-rose-500 hover:text-rose-700 px-1 text-[10px]"><i class="fa-solid fa-trash"></i></button>`;
+      row.className = 'bg-white p-1.5 rounded-lg border border-slate-100 mb-1 text-[11px]';
+      row.textContent = c;
       cBox.appendChild(row);
     });
   } else {
@@ -840,10 +931,10 @@ function openOptions() {
   }
 
   if (subjects.length) {
-    subjects.forEach((s, index) => {
+    subjects.forEach(s => {
       const row = document.createElement('div');
-      row.className = 'flex justify-between items-center bg-white p-1.5 rounded-lg border border-slate-100 mb-1';
-      row.innerHTML = `<span>${escapeHtml(s)}</span> <button onclick="deleteOption('subject', ${index})" class="text-rose-500 hover:text-rose-700 px-1 text-[10px]"><i class="fa-solid fa-trash"></i></button>`;
+      row.className = 'bg-white p-1.5 rounded-lg border border-slate-100 mb-1 text-[11px]';
+      row.textContent = s;
       sBox.appendChild(row);
     });
   } else {
@@ -851,49 +942,12 @@ function openOptions() {
   }
 }
 
-async function saveOption(type) {
-  const code = type === 'code' ? el('new-code').value.trim() : "";
-  const subject = type === 'subject' ? el('new-subject').value.trim() : "";
-
-  if (!code && !subject) {
-    alert('กรุณากรอกข้อมูลที่ต้องการเพิ่ม');
+async function openLogs() {
+  if (!isAdmin()) {
+    showAlert('คุณไม่มีสิทธิ์เข้าถึงส่วนนี้');
     return;
   }
 
-  await execute('กำลังเพิ่มข้อมูล...', async () => {
-    await fetch(SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'saveOption', code: code, subject: subject })
-    });
-    await loadAllData(false);
-  });
-
-  openOptions();
-}
-
-async function deleteOption(type, index) {
-  if (!confirm('ต้องการลบรายการนี้ใช่หรือไม่?')) return;
-
-  if (type === 'code') {
-    codes.splice(index, 1);
-  } else if (type === 'subject') {
-    subjects.splice(index, 1);
-  }
-
-  updateOptions();
-  openOptions();
-
-  fetch(SCRIPT_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'saveAllOptions', codes: codes, subjects: subjects })
-  }).catch(e => console.error('Sync Error:', e));
-}
-
-async function openLogs() {
   const fetchAll = isAllLogsLoaded;
 
   if (!fetchAll) {
@@ -921,16 +975,23 @@ async function openLogs() {
     if (Array.isArray(logs) && logs.length > 0) {
       const listToShow = [...logs].reverse();
 
+      const logListContainer = document.createElement('div');
+      logListContainer.className = 'space-y-2 max-h-[350px] overflow-y-auto pr-1';
+
       listToShow.forEach(log => {
-        const div = document.createElement('div');
-        div.className = 'border-b py-2 text-xs';
-        div.innerHTML = `
-          <p class="font-bold text-slate-800">${escapeHtml(log.username || 'System')} • ${escapeHtml(log.actionText || '-')}</p>
-          <p class="text-slate-600 text-[11px] font-medium">${escapeHtml(log.details || '')}</p>
-          <p class="text-slate-500 text-[10px] mt-0.5 font-semibold">${log.timestamp ? new Date(log.timestamp).toLocaleString('th-TH') : '-'}</p>
+        const item = document.createElement('div');
+        item.className = 'bg-slate-50 border border-slate-100 p-2.5 rounded-xl text-xs space-y-1';
+        item.innerHTML = `
+          <div class="flex justify-between items-center">
+            <span class="font-extrabold text-pink-600 bg-pink-50 px-2 py-0.5 rounded-md text-[10px] border border-pink-100">${escapeHtml(log.actionText || 'กิจกรรม')}</span>
+            <span class="text-[10px] text-slate-400 font-semibold">${log.timestamp ? new Date(log.timestamp).toLocaleString('th-TH') : '-'}</span>
+          </div>
+          <p class="text-slate-800 font-semibold text-[11px]">${escapeHtml(log.details || '-')}</p>
+          <p class="text-[10px] text-slate-500">โดย: <span class="font-bold text-slate-700">${escapeHtml(log.username || 'System')}</span></p>
         `;
-        container.appendChild(div);
+        logListContainer.appendChild(item);
       });
+      container.appendChild(logListContainer);
     } else {
       container.innerHTML += '<p class="text-xs text-slate-500 text-center py-4 font-bold">ไม่มีประวัติการใช้งาน</p>';
     }
@@ -943,12 +1004,7 @@ async function clearLogs() {
   if (!confirm('ล้างประวัติทั้งหมดใช่หรือไม่?')) return;
 
   await execute('กำลังล้างประวัติ...', async () => {
-    await fetch(SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'clearLogs' })
-    });
+    await sendSaveRequest('clearLogs');
   });
 
   isAllLogsLoaded = false;
@@ -959,7 +1015,7 @@ function logActivity(actionText, details) {
   fetch(SCRIPT_URL, {
     method: 'POST',
     mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify({
       action: 'saveLog',
       username: currentUser ? currentUser.username : 'Unknown',
@@ -970,7 +1026,6 @@ function logActivity(actionText, details) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // เติมชื่ออัตโนมัติจากครั้งล่าสุดที่เคยเข้า
   const lastUser = localStorage.getItem('homeworkLastUser');
   if (lastUser) {
     el('username').value = lastUser;
@@ -984,10 +1039,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       el('main-page').classList.remove('hidden');
       el('user-display').textContent = currentUser.name;
       
-      el('btn-logs').classList.remove('hidden');
-      el('btn-logs').classList.add('flex');
-      el('btn-options').classList.remove('hidden');
-      el('btn-options').classList.add('flex');
+      updateAdminUI();
 
       await loadAllData(false);
     } catch (error) {
