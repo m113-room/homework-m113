@@ -29,7 +29,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: space-between;
-      padding: 20px 14px;
+      padding: 24px 14px 20px 14px;
     }
 
     .app-card {
@@ -172,7 +172,7 @@
             <span style="color: #3b82f6;">FRI</span>
             <span style="color: #a855f7;">SAT</span>
           </div>
-          <div id="calendar-days" class="grid grid-cols-7 gap-1"></div>
+          <div id="calendar-days" class="grid grid-cols-7 gap-1.5"></div>
         </div>
 
         <div class="bg-slate-50/60 border border-slate-100 rounded-2xl p-3.5">
@@ -247,8 +247,8 @@
 
     </main>
 
-    <!-- ปุ่มการส่งการบ้านและเวอร์ชันด้านล่างสุด -->
-    <div class="w-full text-center pb-2 space-y-2">
+    <!-- ปุ่มการส่งการบ้านด้านล่างสุด -->
+    <div class="w-full text-center pt-3 pb-2 space-y-2">
       <button onclick="showAlert('ระบบส่งการบ้านเปิดใช้งานปกติ')" class="bg-white/95 backdrop-blur-md text-slate-700 text-xs font-bold px-8 py-2.5 rounded-full border border-white shadow-sm hover:bg-white transition">
         การส่งการบ้าน
       </button>
@@ -325,11 +325,24 @@ function dateKey(date) {
     String(date.getDate()).padStart(2, '0');
 }
 
+function normalizeDateStr(value) {
+  if (!value) return '';
+  const str = String(value).trim();
+  if (str.includes('T')) return str.substring(0, 10);
+  if (str.length >= 10 && str.charAt(4) === '-' && str.charAt(7) === '-') return str.substring(0, 10);
+  const d = new Date(str);
+  if (!isNaN(d.getTime())) return dateKey(d);
+  return str;
+}
+
 function formatDate(value) {
   if (!value) return '-';
-  const d = new Date(String(value).substring(0, 10) + 'T12:00:00');
-  if (isNaN(d.getTime())) return String(value);
-  return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+  const str = String(value);
+  const d = new Date(str.includes('T') ? str : str.substring(0, 10) + 'T12:00:00');
+  if (!isNaN(d.getTime())) {
+    return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+  return str;
 }
 
 function showLoading(text = 'กำลังโหลด...') {
@@ -408,7 +421,7 @@ async function login() {
     return;
   }
 
-  await execute('กำลังตรวจสอบสิทธิ์...', async () => {
+  await execute('กำลังตรวจสอบขื่อผู้ใช้...', async () => {
     const res = await fetchJSON(`${SCRIPT_URL}?action=checkLogin&username=${encodeURIComponent(inputVal)}&t=${Date.now()}`);
     
     if (res && res.success && res.user) {
@@ -426,6 +439,7 @@ async function login() {
       el('user-display').textContent = currentUser.name;
 
       updateAdminUI();
+      switchTab('pending'); // กำหนดให้เปิดเข้าหน้า "ภาพรวมงานค้าง" เป็นหน้าแรกเสมอ
 
       await loadAllData(false);
       logActivity('เข้าสู่ระบบ', `ผู้ใช้งาน ${currentUser.name} เข้าสู่ระบบสำเร็จ`);
@@ -537,7 +551,12 @@ function renderTasks() {
 
 function createTaskCard(task) {
   const div = document.createElement('div');
-  div.className = 'bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm';
+  div.className = 'bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm space-y-2';
+
+  const unsubmitted = getUnsubmitted(task);
+  const total = TOTAL_STUDENTS + (task.extraUnsubmitted || []).filter(n => Number(n) > TOTAL_STUDENTS).length;
+  const completed = Math.max(0, total - unsubmitted.length);
+  const percent = total ? Math.round(completed / total * 100) : 0;
 
   div.innerHTML = `
     <div class="flex justify-between items-start gap-2">
@@ -547,7 +566,10 @@ function createTaskCard(task) {
         </span>
         <h3 class="font-extrabold text-xs text-slate-800 mt-1">${escapeHtml(task.subject)}</h3>
         <p class="text-[11px] text-slate-600 mt-0.5 font-medium">${escapeHtml(task.detail)}</p>
-        <p class="text-[10px] text-rose-500 font-bold mt-1.5">กำหนดส่ง: ${formatDate(task.dueDate)}</p>
+        <div class="flex gap-3 mt-1.5 text-[10px] font-bold">
+          <span class="text-slate-500">วันสั่ง: ${formatDate(task.assignDate)}</span>
+          <span class="text-rose-500">กำหนดส่ง: ${formatDate(task.dueDate)}</span>
+        </div>
       </div>
 
       <div class="flex gap-1.5">
@@ -559,10 +581,27 @@ function createTaskCard(task) {
         </button>
       </div>
     </div>
+
+    <div class="pt-1.5 border-t border-slate-100">
+      <div class="flex justify-between items-center text-[10px] font-extrabold mb-2">
+        <span class="text-emerald-600">ส่งแล้ว ${completed}/${total} (${percent}%)</span>
+        <span class="text-rose-500">ยังไม่ส่ง (${unsubmitted.length})</span>
+      </div>
+      <div class="flex flex-wrap gap-1.5" data-students></div>
+    </div>
   `;
 
   div.querySelector('[data-action="pin"]').onclick = () => togglePin(task.id);
   div.querySelector('[data-action="delete"]').onclick = () => deleteTask(task.id);
+
+  const students = div.querySelector('[data-students]');
+  unsubmitted.forEach(number => {
+    const button = document.createElement('button');
+    button.className = 'bg-rose-50 text-rose-600 px-2.5 py-1 rounded-lg text-[11px] font-bold border border-rose-100 hover:bg-rose-100 transition shadow-xs';
+    button.textContent = number;
+    button.onclick = () => toggleStudent(task.id, number);
+    students.appendChild(button);
+  });
 
   return div;
 }
@@ -595,8 +634,15 @@ function createTrackingCard(task) {
   div.innerHTML = `
     <div class="flex justify-between items-start gap-2">
       <div>
-        <h3 class="font-extrabold text-xs text-slate-800">${escapeHtml(task.subject)}</h3>
+        <span class="text-[10px] bg-purple-50 text-purple-600 px-2 py-0.5 rounded-md font-extrabold border border-purple-100">
+          ${escapeHtml(task.code)}
+        </span>
+        <h3 class="font-extrabold text-xs text-slate-800 mt-1">${escapeHtml(task.subject)}</h3>
         <p class="text-[11px] text-slate-600 mt-0.5 font-medium">${escapeHtml(task.detail)}</p>
+        <div class="flex gap-3 mt-1.5 text-[10px] font-bold">
+          <span class="text-slate-500">วันสั่ง: ${formatDate(task.assignDate)}</span>
+          <span class="text-rose-500">กำหนดส่ง: ${formatDate(task.dueDate)}</span>
+        </div>
       </div>
       <div class="flex gap-1.5">
         <button data-action="pin" class="text-amber-500 hover:text-amber-600 p-1" title="ปักหมุด">
@@ -617,7 +663,7 @@ function createTrackingCard(task) {
       <span class="text-rose-500">ยังไม่ส่ง (${unsubmitted.length})</span>
     </div>
 
-    <div class="flex flex-wrap gap-1 pt-1" data-students></div>
+    <div class="flex flex-wrap gap-1.5 pt-1" data-students></div>
   `;
 
   div.querySelector('[data-action="pin"]').onclick = () => togglePin(task.id);
@@ -626,7 +672,7 @@ function createTrackingCard(task) {
   const students = div.querySelector('[data-students]');
   unsubmitted.forEach(number => {
     const button = document.createElement('button');
-    button.className = 'bg-rose-50 text-rose-600 px-2 py-0.5 rounded-lg text-[10px] font-bold border border-rose-100 hover:bg-rose-100 transition';
+    button.className = 'bg-rose-50 text-rose-600 px-2.5 py-1 rounded-lg text-[11px] font-bold border border-rose-100 hover:bg-rose-100 transition shadow-xs';
     button.textContent = number;
     button.onclick = () => toggleStudent(task.id, number);
     students.appendChild(button);
@@ -675,6 +721,16 @@ async function addTask() {
     return;
   }
 
+  const isDuplicate = tasks.some(t => 
+    t.code.toLowerCase() === task.code.toLowerCase() && 
+    t.detail.toLowerCase() === task.detail.toLowerCase()
+  );
+
+  if (isDuplicate) {
+    showAlert('แจ้งเตือน: มีการบันทึกงานซ้ำในระบบแล้ว!');
+    return;
+  }
+
   const updatedTasks = [task, ...tasks];
 
   const success = await execute('กำลังบันทึกการบ้าน...', async () => {
@@ -694,6 +750,7 @@ async function addTask() {
     selectDate(selectedDate);
     setStatus('บันทึกการบ้านเรียบร้อย');
     logActivity('เพิ่มการบ้าน', `วิชา ${task.subject} (${task.code}) - ${task.detail}`);
+    showAlert('บันทึกการบ้านสำเร็จแล้ว');
   }
 }
 
@@ -765,17 +822,23 @@ async function addExtraStudent() {
   if (!task) return;
 
   if (!Array.isArray(task.extraUnsubmitted)) task.extraUnsubmitted = [];
-  if (!task.extraUnsubmitted.includes(number)) {
-    task.extraUnsubmitted.push(number);
-    renderTasks();
-    
-    const cachedData = JSON.parse(localStorage.getItem('homeworkCacheData') || '{}');
-    cachedData.tasks = tasks;
-    localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
-
-    sendSaveRequest('saveTasks', tasks);
-    logActivity('เพิ่มรายชื่อคนค้างงาน', `เลขที่ ${number} ในวิชา ${task.subject}`);
+  
+  if (task.extraUnsubmitted.includes(number)) {
+    showAlert('แจ้งเตือน: มีรายชื่อเลขที่นี้ในรายการคนค้างอยู่แล้ว!');
+    return;
   }
+
+  task.extraUnsubmitted.push(number);
+  renderTasks();
+    
+  const cachedData = JSON.parse(localStorage.getItem('homeworkCacheData') || '{}');
+  cachedData.tasks = tasks;
+  localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
+
+  sendSaveRequest('saveTasks', tasks);
+  logActivity('เพิ่มรายชื่อคนค้างงาน', `เลขที่ ${number} ในวิชา ${task.subject}`);
+
+  showAlert('เพิ่มรายชื่อคนค้างสำเร็จแล้ว');
 
   el('student-number').value = '';
   el('student-form').classList.add('hidden');
@@ -798,10 +861,47 @@ function renderCalendar() {
   for (let day = 1; day <= totalDays; day++) {
     const key = dateKey(new Date(year, month, day));
     const button = document.createElement('button');
-    button.textContent = day;
-    button.className = 'h-9 rounded-xl text-xs font-bold transition ' +
-      (key === selectedDate ? 'bg-[#38bdf8] text-white shadow-sm' : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-100');
+    
+    button.className = 'h-14 rounded-2xl transition flex flex-col items-center justify-start pt-2.5 relative p-1 ' +
+      (key === selectedDate 
+        ? 'border-2 border-[#38bdf8] bg-white text-[#38bdf8] font-black shadow-sm' 
+        : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-100');
     button.onclick = () => selectDate(key);
+
+    const dayText = document.createElement('span');
+    dayText.className = 'text-sm font-extrabold leading-none mb-1';
+    dayText.textContent = day;
+    button.appendChild(dayText);
+
+    const hasTask = tasks.some(t => {
+      const assign = normalizeDateStr(t.assignDate);
+      const due = normalizeDateStr(t.dueDate);
+      return assign === key || due === key;
+    });
+
+    const rawEvent = dailyEvents[key];
+    const eventsArr = Array.isArray(rawEvent) ? rawEvent : (rawEvent ? [rawEvent] : []);
+    const hasEvent = eventsArr.length > 0 && eventsArr.some(e => String(e).trim() !== '');
+
+    if (hasTask || hasEvent) {
+      const dotsContainer = document.createElement('div');
+      dotsContainer.className = 'flex gap-1 items-center justify-center';
+
+      if (hasTask) {
+        const pinkDot = document.createElement('span');
+        pinkDot.className = 'w-1.5 h-1.5 rounded-full bg-pink-500 shadow-sm';
+        dotsContainer.appendChild(pinkDot);
+      }
+
+      if (hasEvent) {
+        const blueDot = document.createElement('span');
+        blueDot.className = 'w-1.5 h-1.5 rounded-full bg-sky-400 shadow-sm';
+        dotsContainer.appendChild(blueDot);
+      }
+
+      button.appendChild(dotsContainer);
+    }
+
     container.appendChild(button);
   }
 }
@@ -820,7 +920,11 @@ function selectDate(key) {
   const container = el('selected-date-tasks');
   container.innerHTML = '';
 
-  const matches = tasks.filter(task => task.assignDate === key || task.dueDate === key);
+  const matches = tasks.filter(task => {
+    const assign = normalizeDateStr(task.assignDate);
+    const due = normalizeDateStr(task.dueDate);
+    return assign === key || due === key;
+  });
   el('selected-date-count').textContent = matches.length + ' รายการ';
 
   matches.forEach(task => container.appendChild(createTaskCard(task)));
@@ -828,11 +932,25 @@ function selectDate(key) {
 
   const eventList = el('event-list');
   eventList.innerHTML = '';
-  (dailyEvents[key] || []).forEach(event => {
-    const p = document.createElement('p');
-    p.className = 'bg-sky-50 text-sky-800 rounded-xl p-2 text-xs border border-sky-100 font-bold';
-    p.textContent = event;
-    eventList.appendChild(p);
+  
+  const rawEvent = dailyEvents[key];
+  const events = Array.isArray(rawEvent) ? rawEvent : (rawEvent ? [rawEvent] : []);
+
+  events.forEach((event, index) => {
+    const div = document.createElement('div');
+    div.className = 'bg-sky-50 text-sky-800 rounded-xl p-2 text-xs border border-sky-100 font-bold flex justify-between items-center';
+    
+    const span = document.createElement('span');
+    span.textContent = event;
+    div.appendChild(span);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'text-rose-500 hover:text-rose-700 px-1.5 py-0.5 text-xs';
+    deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+    deleteBtn.onclick = () => deleteEvent(key, index);
+    div.appendChild(deleteBtn);
+
+    eventList.appendChild(div);
   });
 
   if (!eventList.children.length) eventList.innerHTML = '<p class="text-[11px] text-slate-500 font-semibold">ไม่มีกิจกรรมพิเศษ</p>';
@@ -843,6 +961,13 @@ async function addEvent() {
   if (!event) return;
 
   if (!dailyEvents[selectedDate]) dailyEvents[selectedDate] = [];
+  else if (!Array.isArray(dailyEvents[selectedDate])) dailyEvents[selectedDate] = [dailyEvents[selectedDate]];
+
+  if (dailyEvents[selectedDate].includes(event)) {
+    showAlert('แจ้งเตือน: มีกิจกรรมนี้ในวันนี้อยู่แล้ว!');
+    return;
+  }
+
   dailyEvents[selectedDate].push(event);
 
   selectDate(selectedDate);
@@ -856,6 +981,30 @@ async function addEvent() {
   sendSaveRequest('saveEvents', dailyEvents);
 
   logActivity('เพิ่มกิจกรรม', `วันที่ ${formatDate(selectedDate)}: ${event}`);
+
+  showAlert('เพิ่มกิจกรรมสำเร็จแล้ว');
+}
+
+async function deleteEvent(key, index) {
+  if (!confirm('ต้องการลบกิจกรรมนี้ใช่หรือไม่?')) return;
+
+  const rawEvent = dailyEvents[key];
+  const events = Array.isArray(rawEvent) ? rawEvent : (rawEvent ? [rawEvent] : []);
+
+  if (events.length > 0) {
+    const removed = events.splice(index, 1);
+    if (events.length === 0) delete dailyEvents[key];
+    else dailyEvents[key] = events;
+
+    selectDate(selectedDate);
+
+    const cachedData = JSON.parse(localStorage.getItem('homeworkCacheData') || '{}');
+    cachedData.events = dailyEvents;
+    localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
+
+    sendSaveRequest('saveEvents', dailyEvents);
+    logActivity('ลบกิจกรรม', `วันที่ ${formatDate(key)}: ${removed}`);
+  }
 }
 
 function updateOptions() {
@@ -1040,6 +1189,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       el('user-display').textContent = currentUser.name;
       
       updateAdminUI();
+      switchTab('pending'); // กำหนดหน้าแรกเป็น "ภาพรวมงานค้าง" เมื่อเปิดแอปด้วย session เดิม
 
       await loadAllData(false);
     } catch (error) {
