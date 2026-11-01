@@ -122,11 +122,36 @@
         <i class="fa-solid fa-circle-info"></i> พร้อมใช้งาน
       </div>
 
-      <nav class="grid grid-cols-3 gap-1 bg-slate-100/80 rounded-2xl p-1 mb-5 text-center">
+      <nav class="grid grid-cols-3 gap-1 bg-slate-100/80 rounded-2xl p-1 mb-4 text-center">
         <button id="tab-pending" onclick="switchTab('pending')" class="py-2.5 rounded-xl text-xs font-extrabold transition">ภาพรวมงานค้าง</button>
         <button id="tab-calendar" onclick="switchTab('calendar')" class="py-2.5 rounded-xl text-xs font-extrabold transition">ปฏิทินงาน</button>
         <button id="tab-tracking" onclick="switchTab('tracking')" class="py-2.5 rounded-xl text-xs font-extrabold transition">งานค้าง</button>
       </nav>
+
+      <!-- Filter & Search Bar -->
+      <div id="filter-container" class="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 mb-4 space-y-3 shadow-sm">
+        <div class="flex items-center gap-2">
+          <div class="relative flex-1">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+            <input id="search-keyword" type="text" placeholder="ค้นหาชื่อวิชา, รหัส หรือรายละเอียด..." oninput="renderTasks()"
+              class="w-full pl-8 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
+          </div>
+          <select id="filter-subject" onchange="renderTasks()"
+            class="w-32 py-2.5 px-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
+            <option value="">ทุกวิชา</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-2 pt-2 border-t border-slate-200/60">
+          <span class="text-[11px] font-bold text-slate-500"><i class="fa-solid fa-filter"></i> เรียงตาม:</span>
+          <select id="filter-date-mode" onchange="renderTasks()"
+            class="flex-1 py-2 px-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
+            <option value="all">ค่าเริ่มต้น (สร้างล่าสุด)</option>
+            <option value="due-soon">กำหนดส่งใกล้ที่สุด (เร็วไปช้า)</option>
+            <option value="assign-new">วันที่สั่งล่าสุด (ใหม่ไปเก่า)</option>
+          </select>
+        </div>
+      </div>
 
       <section id="view-pending">
         <div class="bg-amber-50/70 border border-amber-100 rounded-2xl p-3.5 mb-4">
@@ -253,7 +278,7 @@
         การส่งการบ้าน
       </button>
       <div>
-        <span class="text-[10px] text-slate-500 font-bold">(V.1.67)</span>
+        <span class="text-[10px] text-slate-500 font-bold">(V.2.11 Calendar Date Timezone Fix)</span>
       </div>
     </div>
 
@@ -328,10 +353,15 @@ function dateKey(date) {
 function normalizeDateStr(value) {
   if (!value) return '';
   const str = String(value).trim();
-  if (str.includes('T')) return str.substring(0, 10);
-  if (str.length >= 10 && str.charAt(4) === '-' && str.charAt(7) === '-') return str.substring(0, 10);
+  if (str.length === 10 && str.charAt(4) === '-' && str.charAt(7) === '-') {
+    return str;
+  }
   const d = new Date(str);
-  if (!isNaN(d.getTime())) return dateKey(d);
+  if (!isNaN(d.getTime())) {
+    return d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
+  }
   return str;
 }
 
@@ -392,7 +422,9 @@ async function execute(label, action) {
   }
 }
 
-function isAdmin() { return currentUser && ['admin', 'creator'].includes(currentUser.role); }
+function isAdmin() { 
+  return currentUser && ['admin', 'creator'].includes(String(currentUser.role).toLowerCase()); 
+}
 
 function updateAdminUI() {
   const isUserAdmin = isAdmin();
@@ -421,7 +453,7 @@ async function login() {
     return;
   }
 
-  await execute('กำลังตรวจสอบขื่อผู้ใช้...', async () => {
+  await execute('กำลังตรวจสอบสิทธิ์...', async () => {
     const res = await fetchJSON(`${SCRIPT_URL}?action=checkLogin&username=${encodeURIComponent(inputVal)}&t=${Date.now()}`);
     
     if (res && res.success && res.user) {
@@ -439,7 +471,7 @@ async function login() {
       el('user-display').textContent = currentUser.name;
 
       updateAdminUI();
-      switchTab('pending'); // กำหนดให้เปิดเข้าหน้า "ภาพรวมงานค้าง" เป็นหน้าแรกเสมอ
+      switchTab('pending');
 
       await loadAllData(false);
       logActivity('เข้าสู่ระบบ', `ผู้ใช้งาน ${currentUser.name} เข้าสู่ระบบสำเร็จ`);
@@ -516,6 +548,11 @@ function switchTab(tab) {
       btn.className = 'py-2.5 rounded-xl text-xs font-extrabold transition text-slate-500';
     }
   });
+
+  const filterContainer = el('filter-container');
+  if (filterContainer) {
+    filterContainer.classList.toggle('hidden', tab === 'calendar');
+  }
 }
 
 function renderTasks() {
@@ -529,10 +566,38 @@ function renderTasks() {
   tracking.innerHTML = '';
   selector.innerHTML = '';
 
-  el('task-count').textContent = tasks.length + ' ITEMS';
-  if(el('tracking-count')) el('tracking-count').textContent = tasks.length + ' ITEMS';
+  const keyword = (el('search-keyword').value || '').toLowerCase().trim();
+  const selectedSubject = el('filter-subject').value;
+  const dateMode = el('filter-date-mode').value;
 
-  tasks.forEach(task => {
+  let filteredTasks = tasks.filter(task => {
+    const matchKeyword = !keyword || 
+      (task.code && task.code.toLowerCase().includes(keyword)) ||
+      (task.subject && task.subject.toLowerCase().includes(keyword)) ||
+      (task.detail && task.detail.toLowerCase().includes(keyword));
+    
+    const matchSubject = !selectedSubject || task.subject === selectedSubject;
+    return matchKeyword && matchSubject;
+  });
+
+  filteredTasks.sort((a, b) => {
+    if (dateMode === 'due-soon') {
+      const dateA = a.dueDate ? new Date(a.dueDate).getTime() : 0;
+      const dateB = b.dueDate ? new Date(b.dueDate).getTime() : 0;
+      return dateA - dateB;
+    } else if (dateMode === 'assign-new') {
+      const dateA = a.assignDate ? new Date(a.assignDate).getTime() : 0;
+      const dateB = b.assignDate ? new Date(b.assignDate).getTime() : 0;
+      return dateB - dateA;
+    } else {
+      return Number(b.id || 0) - Number(a.id || 0);
+    }
+  });
+
+  el('task-count').textContent = filteredTasks.length + ' ITEMS';
+  if(el('tracking-count')) el('tracking-count').textContent = filteredTasks.length + ' ITEMS';
+
+  filteredTasks.forEach(task => {
     if (task.isPinned) pinned.appendChild(createTaskCard(task));
     else list.appendChild(createTaskCard(task));
 
@@ -544,9 +609,9 @@ function renderTasks() {
     selector.appendChild(option);
   });
 
-  if (!pinned.children.length) pinned.innerHTML = '<p class="text-[11px] text-amber-500 text-center py-2 font-bold">ไม่มีรายการปักหมุด</p>';
-  if (!list.children.length) list.innerHTML = '<p class="text-xs text-slate-500 text-center py-6 font-bold">ไม่มีงานค้างในระบบ เยี่ยมมาก!</p>';
-  if (!tracking.children.length) tracking.innerHTML = '<p class="text-xs text-slate-500 text-center py-6 font-bold">ไม่มีรายการงานค้าง</p>';
+  if (!pinned.children.length) pinned.innerHTML = '<p class="text-[11px] text-amber-500 text-center py-2 font-bold">ไม่มีรายการปักหมุดที่ตรงกัน</p>';
+  if (!list.children.length) list.innerHTML = '<p class="text-xs text-slate-500 text-center py-6 font-bold">ไม่พบรายการการบ้านที่ค้นหา</p>';
+  if (!tracking.children.length) tracking.innerHTML = '<p class="text-xs text-slate-500 text-center py-6 font-bold">ไม่พบรายการงานค้างที่ค้นหา</p>';
 }
 
 function createTaskCard(task) {
@@ -1010,6 +1075,10 @@ async function deleteEvent(key, index) {
 function updateOptions() {
   el('code-options').innerHTML = '';
   el('subject-options').innerHTML = '';
+  
+  const filterSubjSelect = el('filter-subject');
+  const currentSelectedFilter = filterSubjSelect.value;
+  filterSubjSelect.innerHTML = '<option value="">ทุกวิชา</option>';
 
   codes.forEach(code => {
     const option = document.createElement('option');
@@ -1021,7 +1090,14 @@ function updateOptions() {
     const option = document.createElement('option');
     option.value = subject;
     el('subject-options').appendChild(option);
+
+    const filterOpt = document.createElement('option');
+    filterOpt.value = subject;
+    filterOpt.textContent = subject;
+    filterSubjSelect.appendChild(filterOpt);
   });
+
+  filterSubjSelect.value = currentSelectedFilter;
 }
 
 function openModal(title, content) {
@@ -1189,7 +1265,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       el('user-display').textContent = currentUser.name;
       
       updateAdminUI();
-      switchTab('pending'); // กำหนดหน้าแรกเป็น "ภาพรวมงานค้าง" เมื่อเปิดแอปด้วย session เดิม
+      switchTab('pending');
 
       await loadAllData(false);
     } catch (error) {
