@@ -229,8 +229,8 @@
           <h3 class="text-xs font-bold text-pink-600 mb-1">เพิ่มรายการการบ้าน</h3>
           
           <div class="grid grid-cols-2 gap-2">
-            <input id="task-code" list="code-options" placeholder="รหัสวิชา" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-white">
-            <input id="task-subject" list="subject-options" placeholder="ชื่อวิชา" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-white">
+            <input id="task-code" list="code-options" placeholder="รหัสวิชา" oninput="autoFillSubject('code')" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-white">
+            <input id="task-subject" list="subject-options" placeholder="ชื่อวิชา" oninput="autoFillSubject('subject')" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-white">
           </div>
           <datalist id="code-options"></datalist>
           <datalist id="subject-options"></datalist>
@@ -246,6 +246,11 @@
               <span class="text-[10px] font-bold text-slate-500 mr-2 leading-tight">วัน<br>ส่ง:</span>
               <input id="task-due-date" type="date" class="w-full text-xs bg-transparent border-0 p-0">
             </div>
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 mb-1">แนบรูปภาพประกอบ (ถ้ามี):</label>
+            <input id="task-image" type="file" accept="image/*" class="w-full text-xs p-1.5 border border-slate-200 rounded-xl bg-white">
           </div>
 
           <button onclick="addTask()" class="w-full bg-purple-600 text-white py-3 rounded-2xl font-extrabold text-xs shadow-sm hover:opacity-95 transition mt-2">
@@ -278,7 +283,7 @@
         การส่งการบ้าน
       </button>
       <div>
-        <span class="text-[10px] text-slate-500 font-bold">(V.1.68)</span>
+        <span class="text-[10px] text-slate-500 font-bold">(V.1.78)</span>
       </div>
     </div>
 
@@ -316,6 +321,7 @@ let tasks = [];
 let dailyEvents = {};
 let codes = [];
 let subjects = [];
+let subjectMap = {};
 let currentTab = 'pending';
 let calendarDate = new Date();
 let selectedDate = dateKey(new Date());
@@ -367,11 +373,37 @@ function normalizeDateStr(value) {
 
 function formatDate(value) {
   if (!value) return '-';
-  const str = String(value);
+  const str = String(value).trim();
+  
+  const monthMap = {
+    'Jan': 'ม.ค.', 'Feb': 'ก.พ.', 'Mar': 'มี.ค.', 'Apr': 'เม.ย.',
+    'May': 'พ.ค.', 'Jun': 'มิ.ย.', 'Jul': 'ก.ค.', 'Aug': 'ส.ค.',
+    'Sep': 'ก.ย.', 'Oct': 'ต.ค.', 'Nov': 'พ.ย.', 'Dec': 'ธ.ค.'
+  };
+
+  const matchEng = str.match(/([A-Za-z]{3})\s+([A-Za-z]{3})\s+(\d{1,2})/);
+  if (matchEng) {
+    const month = monthMap[matchEng[2]] || matchEng[2];
+    const day = parseInt(matchEng[3], 10);
+    const yearMatch = str.match(/\b(20\d{2})\b/);
+    const year = yearMatch ? parseInt(yearMatch[1], 10) + 543 : 2569;
+    return `${day} ${month} ${year}`;
+  }
+
   const d = new Date(str.includes('T') ? str : str.substring(0, 10) + 'T12:00:00');
   if (!isNaN(d.getTime())) {
-    return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+    const day = d.getDate();
+    const thaiMonths = [
+      'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+      'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
+    ];
+    const month = thaiMonths[d.getMonth()];
+    let year = d.getFullYear();
+    if (year < 2000) year += 543;
+    else year += 543;
+    return `${day} ${month} ${year}`;
   }
+
   return str;
 }
 
@@ -498,6 +530,7 @@ async function loadAllData(showMessage = false) {
       dailyEvents = parsed.events || {};
       codes = parsed.options?.codes || [];
       subjects = parsed.options?.subjects || [];
+      buildSubjectMap(parsed.options);
       updateOptions();
       renderTasks();
       renderCalendar();
@@ -512,6 +545,7 @@ async function loadAllData(showMessage = false) {
       dailyEvents = res.events || {};
       codes = res.options?.codes || [];
       subjects = res.options?.subjects || [];
+      buildSubjectMap(res.options);
 
       localStorage.setItem('homeworkCacheData', JSON.stringify(res));
 
@@ -528,10 +562,60 @@ async function loadAllData(showMessage = false) {
   if (busy) await load();
   else {
     if (!cachedData) {
-      await execute('กำลังซิงค์ข้อมูล...', load);
+      await execute('กำลังซิงค์', load);
     } else {
       load().catch(e => console.error(e));
     }
+  }
+}
+
+function buildSubjectMap(options) {
+  subjectMap = {};
+  if (!options) return;
+  const rawCodes = options.codes || [];
+  const rawSubjects = options.subjects || [];
+  
+  for (let i = 0; i < Math.max(rawCodes.length, rawSubjects.length); i++) {
+    let c = typeof rawCodes[i] === 'object' ? (rawCodes[i].code || rawCodes[i].val || '') : String(rawCodes[i] || '');
+    let s = typeof rawSubjects[i] === 'object' ? (rawSubjects[i].subject || rawSubjects[i].name || rawSubjects[i].val || '') : String(rawSubjects[i] || '');
+    let teacher = '';
+    if (typeof rawCodes[i] === 'object' && rawCodes[i].teacher) teacher = rawCodes[i].teacher;
+    if (typeof rawSubjects[i] === 'object' && rawSubjects[i].teacher) teacher = rawSubjects[i].teacher;
+
+    if (c || s) {
+      const item = { code: c, subject: s, teacher: teacher };
+      if (c) subjectMap[c.toLowerCase().trim()] = item;
+      if (s) subjectMap[s.toLowerCase().trim()] = item;
+      if (teacher) subjectMap[teacher.toLowerCase().trim()] = item;
+    }
+  }
+
+  tasks.forEach(t => {
+    if (t.code && t.subject) {
+      const item = { code: t.code, subject: t.subject, teacher: t.teacher || '' };
+      subjectMap[t.code.toLowerCase().trim()] = item;
+      subjectMap[t.subject.toLowerCase().trim()] = item;
+    }
+  });
+}
+
+function autoFillSubject(type) {
+  const codeInput = el('task-code');
+  const subjectInput = el('task-subject');
+  const query = (type === 'code' ? codeInput.value : subjectInput.value).toLowerCase().trim();
+  if (!query) return;
+
+  let found = null;
+  for (let key in subjectMap) {
+    if (key.includes(query) || query.includes(key)) {
+      found = subjectMap[key];
+      break;
+    }
+  }
+
+  if (found) {
+    if (found.code) codeInput.value = found.code;
+    if (found.subject) subjectInput.value = found.subject;
   }
 }
 
@@ -614,6 +698,7 @@ function renderTasks() {
   if (!tracking.children.length) tracking.innerHTML = '<p class="text-xs text-slate-500 text-center py-6 font-bold">ไม่พบรายการงานค้างที่ค้นหา</p>';
 }
 
+// ฟังก์ชันสร้างการ์ด (ตรวจสอบให้แน่ใจว่า task.imageUrl มีค่าจริงและไม่ใช่ค่าว่าง ถึงจะสร้างแท็กรูปภาพ)
 function createTaskCard(task) {
   const div = document.createElement('div');
   div.className = 'bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm space-y-2';
@@ -623,14 +708,24 @@ function createTaskCard(task) {
   const completed = Math.max(0, total - unsubmitted.length);
   const percent = total ? Math.round(completed / total * 100) : 0;
 
+  const hasImage = task.imageUrl && String(task.imageUrl).trim() !== "" && String(task.imageUrl).startsWith('http');
+  const imageHTML = hasImage ? `
+    <div class="mt-2">
+      <a href="${task.imageUrl}" target="_blank">
+        <img src="${task.imageUrl}" alt="รูปการบ้าน" class="max-h-36 rounded-xl border border-slate-200 object-cover">
+      </a>
+    </div>
+  ` : '';
+
   div.innerHTML = `
     <div class="flex justify-between items-start gap-2">
-      <div>
+      <div class="flex-1">
         <span class="text-[10px] bg-pink-50 text-pink-600 px-2 py-0.5 rounded-md font-extrabold border border-pink-100">
           ${escapeHtml(task.code)}
         </span>
         <h3 class="font-extrabold text-xs text-slate-800 mt-1">${escapeHtml(task.subject)}</h3>
         <p class="text-[11px] text-slate-600 mt-0.5 font-medium">${escapeHtml(task.detail)}</p>
+        ${imageHTML}
         <div class="flex gap-3 mt-1.5 text-[10px] font-bold">
           <span class="text-slate-500">วันสั่ง: ${formatDate(task.assignDate)}</span>
           <span class="text-rose-500">กำหนดส่ง: ${formatDate(task.dueDate)}</span>
@@ -647,26 +742,19 @@ function createTaskCard(task) {
       </div>
     </div>
 
-    <div class="pt-1.5 border-t border-slate-100">
-      <div class="flex justify-between items-center text-[10px] font-extrabold mb-2">
+    <div class="pt-2 border-t border-slate-100 space-y-1.5">
+      <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+        <div class="bg-emerald-500 h-full rounded-full" style="width:${percent}%"></div>
+      </div>
+      <div class="flex justify-between items-center text-[10px] font-extrabold">
         <span class="text-emerald-600">ส่งแล้ว ${completed}/${total} (${percent}%)</span>
         <span class="text-rose-500">ยังไม่ส่ง (${unsubmitted.length})</span>
       </div>
-      <div class="flex flex-wrap gap-1.5" data-students></div>
     </div>
   `;
 
   div.querySelector('[data-action="pin"]').onclick = () => togglePin(task.id);
   div.querySelector('[data-action="delete"]').onclick = () => deleteTask(task.id);
-
-  const students = div.querySelector('[data-students]');
-  unsubmitted.forEach(number => {
-    const button = document.createElement('button');
-    button.className = 'bg-rose-50 text-rose-600 px-2.5 py-1 rounded-lg text-[11px] font-bold border border-rose-100 hover:bg-rose-100 transition shadow-xs';
-    button.textContent = number;
-    button.onclick = () => toggleStudent(task.id, number);
-    students.appendChild(button);
-  });
 
   return div;
 }
@@ -696,14 +784,24 @@ function createTrackingCard(task) {
   const completed = Math.max(0, total - unsubmitted.length);
   const percent = total ? Math.round(completed / total * 100) : 0;
 
+  const hasImage = task.imageUrl && String(task.imageUrl).trim() !== "" && String(task.imageUrl).startsWith('http');
+  const imageHTML = hasImage ? `
+    <div class="mt-2">
+      <a href="${task.imageUrl}" target="_blank">
+        <img src="${task.imageUrl}" alt="รูปการบ้าน" class="max-h-36 rounded-xl border border-slate-200 object-cover">
+      </a>
+    </div>
+  ` : '';
+
   div.innerHTML = `
     <div class="flex justify-between items-start gap-2">
-      <div>
+      <div class="flex-1">
         <span class="text-[10px] bg-purple-50 text-purple-600 px-2 py-0.5 rounded-md font-extrabold border border-purple-100">
           ${escapeHtml(task.code)}
         </span>
         <h3 class="font-extrabold text-xs text-slate-800 mt-1">${escapeHtml(task.subject)}</h3>
         <p class="text-[11px] text-slate-600 mt-0.5 font-medium">${escapeHtml(task.detail)}</p>
+        ${imageHTML}
         <div class="flex gap-3 mt-1.5 text-[10px] font-bold">
           <span class="text-slate-500">วันสั่ง: ${formatDate(task.assignDate)}</span>
           <span class="text-rose-500">กำหนดส่ง: ${formatDate(task.dueDate)}</span>
@@ -768,27 +866,43 @@ async function sendSaveRequest(action, payloadData = null) {
   await new Promise(resolve => setTimeout(resolve, 1500));
 }
 
-async function addTask() {
-  const task = {
-    id: String(Date.now()),
-    code: el('task-code').value.trim(),
-    subject: el('task-subject').value.trim(),
-    detail: el('task-detail').value.trim(),
-    assignDate: el('task-assign-date').value,
-    dueDate: el('task-due-date').value,
-    isPinned: false,
-    submitted: [],
-    extraUnsubmitted: []
-  };
+function handleImageUpload(fileInputId) {
+  return new Promise((resolve, reject) => {
+    const fileInput = document.getElementById(fileInputId);
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+      resolve(null);
+      return;
+    }
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      resolve({
+        data: e.target.result,
+        type: file.type,
+        name: file.name
+      });
+    };
+    reader.onerror = function(error) {
+      reject(error);
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
-  if (!task.code || !task.subject || !task.detail || !task.dueDate) {
+async function addTask() {
+  const code = el('task-code').value.trim();
+  const subject = el('task-subject').value.trim();
+  const detail = el('task-detail').value.trim();
+  const dueDate = el('task-due-date').value;
+
+  if (!code || !subject || !detail || !dueDate) {
     showAlert('กรุณากรอกข้อมูลให้ครบ');
     return;
   }
 
   const isDuplicate = tasks.some(t => 
-    t.code.toLowerCase() === task.code.toLowerCase() && 
-    t.detail.toLowerCase() === task.detail.toLowerCase()
+    t.code.toLowerCase() === code.toLowerCase() && 
+    t.detail.toLowerCase() === detail.toLowerCase()
   );
 
   if (isDuplicate) {
@@ -796,19 +910,42 @@ async function addTask() {
     return;
   }
 
+  let imageObj = null;
+  try {
+    imageObj = await handleImageUpload('task-image');
+  } catch(e) {
+    console.error("Image Parse Error:", e);
+  }
+
+  const task = {
+    id: String(Date.now()),
+    code: code,
+    subject: subject,
+    detail: detail,
+    assignDate: el('task-assign-date').value,
+    dueDate: dueDate,
+    isPinned: false,
+    submitted: [],
+    extraUnsubmitted: [],
+    imageObj: imageObj
+  };
+
   const updatedTasks = [task, ...tasks];
 
-  const success = await execute('กำลังบันทึกการบ้าน...', async () => {
+  const success = await execute('กำลังบันทึกการบ้านและอัพโหลดรูป', async () => {
     await sendSaveRequest('saveTasks', updatedTasks);
   });
 
   if (success) {
+    delete task.imageObj;
     tasks = updatedTasks;
     const cachedData = JSON.parse(localStorage.getItem('homeworkCacheData') || '{}');
     cachedData.tasks = tasks;
     localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
 
-    ['task-code', 'task-subject', 'task-detail', 'task-assign-date', 'task-due-date'].forEach(id => el(id).value = '');
+    ['task-code', 'task-subject', 'task-detail', 'task-assign-date', 'task-due-date', 'task-image'].forEach(id => {
+      if(el(id)) el(id).value = '';
+    });
     el('task-form').classList.add('hidden');
     renderTasks();
     renderCalendar();
@@ -913,7 +1050,11 @@ function renderCalendar() {
   const year = calendarDate.getFullYear();
   const month = calendarDate.getMonth();
 
-  el('calendar-month-year').textContent = calendarDate.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+  const thaiMonthsLong = [
+    'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+    'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+  ];
+  el('calendar-month-year').textContent = `${thaiMonthsLong[month]} ${year + 543}`;
 
   const container = el('calendar-days');
   container.innerHTML = '';
@@ -939,9 +1080,8 @@ function renderCalendar() {
     button.appendChild(dayText);
 
     const hasTask = tasks.some(t => {
-      const assign = normalizeDateStr(t.assignDate);
       const due = normalizeDateStr(t.dueDate);
-      return assign === key || due === key;
+      return due === key;
     });
 
     const rawEvent = dailyEvents[key];
