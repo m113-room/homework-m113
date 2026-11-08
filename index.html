@@ -109,7 +109,8 @@
           <button id="btn-options" onclick="openOptions()" title="จัดการวิชา" class="w-8 h-8 rounded-full bg-sky-50 text-sky-600 items-center justify-center text-xs hover:bg-sky-100 transition hidden">
             <i class="fa-solid fa-list-check"></i>
           </button>
-          <button onclick="loadAllData(true)" title="รีเฟรช" class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs hover:bg-slate-200 transition">
+          <!-- ปุ่มรีเฟรชเรียกฟังก์ชันซิงค์พร้อมป๊อปอัพ -->
+          <button onclick="syncDataWithPopup()" title="รีเฟรช" class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs hover:bg-slate-200 transition">
             <i class="fa-solid fa-rotate"></i>
           </button>
           <button onclick="logout()" class="px-3 py-1.5 bg-rose-50 text-rose-500 rounded-xl text-[11px] font-extrabold hover:bg-rose-100 transition ml-1">
@@ -283,7 +284,7 @@
         การส่งการบ้าน
       </button>
       <div>
-        <span class="text-[10px] text-slate-500 font-bold">(V.1.78)</span>
+        <span class="text-[10px] text-slate-500 font-bold">(V.1.98)</span>
       </div>
     </div>
 
@@ -455,7 +456,7 @@ async function execute(label, action) {
 }
 
 function isAdmin() { 
-  return currentUser && ['admin', 'creator'].includes(String(currentUser.role).toLowerCase()); 
+  return currentUser && ['admin', 'creator'].includes(String(currentUser.role || '').toLowerCase()); 
 }
 
 function updateAdminUI() {
@@ -490,9 +491,8 @@ async function login() {
     
     if (res && res.success && res.user) {
       currentUser = {
-        username: res.user.username,
-        role: res.user.role,
-        name: res.user.name
+        username: res.user.username || res.user.Username || inputVal,
+        role: String(res.user.role || 'member').toLowerCase()
       };
 
       localStorage.setItem('homeworkLastUser', currentUser.username);
@@ -500,13 +500,14 @@ async function login() {
 
       el('login-page').classList.add('hidden');
       el('main-page').classList.remove('hidden');
-      el('user-display').textContent = currentUser.name;
+      
+      el('user-display').textContent = `(${currentUser.role}) ${currentUser.username}`;
 
       updateAdminUI();
       switchTab('pending');
 
       await loadAllData(false);
-      logActivity('เข้าสู่ระบบ', `ผู้ใช้งาน ${currentUser.name} เข้าสู่ระบบสำเร็จ`);
+      logActivity('เข้าสู่ระบบ', `ผู้ใช้งาน ${currentUser.username} (${currentUser.role}) เข้าสู่ระบบสำเร็จ`);
     } else {
       throw new Error(res.error || 'ไม่พบบัญชี');
     }
@@ -514,11 +515,25 @@ async function login() {
 }
 
 function logout() {
-  logActivity('ออกจากระบบ', `ผู้ใช้งาน ${currentUser ? currentUser.name : 'Unknown'} ออกจากระบบ`);
+  logActivity('ออกจากระบบ', `ผู้ใช้งานออกจากระบบ`);
   currentUser = null;
   sessionStorage.removeItem('homeworkUser');
   localStorage.removeItem('homeworkCacheData');
   location.reload();
+}
+
+// ฟังก์ชันกดรีเฟรชพร้อมแสดงป๊อปอัพ "กำลังซิงค์ข้อมูล..."
+async function syncDataWithPopup() {
+  showLoading('กำลังซิงค์ข้อมูล...');
+  try {
+    await loadAllData(false);
+    showAlert('ซิงค์ข้อมูลสำเร็จ');
+  } catch (e) {
+    console.error(e);
+    showAlert('เกิดข้อผิดพลาดในการซิงค์');
+  } finally {
+    hideLoading();
+  }
 }
 
 async function loadAllData(showMessage = false) {
@@ -698,7 +713,6 @@ function renderTasks() {
   if (!tracking.children.length) tracking.innerHTML = '<p class="text-xs text-slate-500 text-center py-6 font-bold">ไม่พบรายการงานค้างที่ค้นหา</p>';
 }
 
-// ฟังก์ชันสร้างการ์ด (ตรวจสอบให้แน่ใจว่า task.imageUrl มีค่าจริงและไม่ใช่ค่าว่าง ถึงจะสร้างแท็กรูปภาพ)
 function createTaskCard(task) {
   const div = document.createElement('div');
   div.className = 'bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm space-y-2';
@@ -973,22 +987,49 @@ async function togglePin(id) {
 
 async function deleteTask(id) {
   const task = tasks.find(t => String(t.id) === String(id));
-  if (!confirm('ต้องการลบการบ้านนี้ใช่หรือไม่?')) return;
+  if (!task) return;
 
-  tasks = tasks.filter(t => String(t.id) !== String(id));
-  renderTasks();
-  renderCalendar();
-  selectDate(selectedDate);
+  const modalContent = `
+    <div class="text-center space-y-4">
+      <div class="w-12 h-12 mx-auto bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center text-xl shadow-inner">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <div>
+        <h4 class="font-extrabold text-sm text-slate-800">ยืนยันการลบการบ้าน</h4>
+        <p class="text-xs text-slate-500 mt-1">วิชา: ${escapeHtml(task.subject)}<br>${escapeHtml(task.detail)}</p>
+      </div>
+      <div class="grid grid-cols-2 gap-2 pt-2">
+        <button onclick="closeModal()" class="w-full bg-slate-100 text-slate-600 py-2.5 rounded-xl text-xs font-extrabold hover:bg-slate-200 transition">
+          ยกเลิก
+        </button>
+        <button id="confirm-delete-btn" class="w-full bg-rose-500 text-white py-2.5 rounded-xl text-xs font-extrabold hover:bg-rose-600 transition shadow-sm">
+          ลบข้อมูล
+        </button>
+      </div>
+    </div>
+  `;
 
-  const cachedData = JSON.parse(localStorage.getItem('homeworkCacheData') || '{}');
-  cachedData.tasks = tasks;
-  localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
+  openModal('แจ้งเตือน', modalContent);
 
-  sendSaveRequest('saveTasks', tasks);
+  document.getElementById('confirm-delete-btn').onclick = async () => {
+    closeModal();
 
-  if (task) {
-    logActivity('ลบการบ้าน', `วิชา ${task.subject} - ${task.detail}`);
-  }
+    tasks = tasks.filter(t => String(t.id) !== String(id));
+    renderTasks();
+    renderCalendar();
+    selectDate(selectedDate);
+
+    const cachedData = JSON.parse(localStorage.getItem('homeworkCacheData') || '{}');
+    cachedData.tasks = tasks;
+    localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
+
+    sendSaveRequest('saveTasks', tasks);
+
+    if (task) {
+      logActivity('ลบการบ้าน', `วิชา ${task.subject} - ${task.detail}`);
+    }
+    showAlert('ลบการบ้านเรียบร้อยแล้ว');
+  };
 }
 
 async function toggleStudent(taskId, number) {
@@ -1270,7 +1311,7 @@ function openOptions() {
         </div>
       </div>
 
-      <button onclick="loadAllData(true); closeModal();" class="w-full bg-sky-50 text-sky-600 border border-sky-100 py-2 rounded-xl text-xs font-bold mt-2">
+      <button onclick="syncDataWithPopup(); closeModal();" class="w-full bg-sky-50 text-sky-600 border border-sky-100 py-2 rounded-xl text-xs font-bold mt-2">
         รีเฟรชรายการตัวเลือก
       </button>
     </div>
@@ -1383,7 +1424,7 @@ function logActivity(actionText, details) {
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify({
       action: 'saveLog',
-      username: currentUser ? currentUser.username : 'Unknown',
+      username: currentUser ? (currentUser.username || 'Unknown') : 'Unknown',
       actionText: actionText,
       details: details
     })
@@ -1402,7 +1443,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       currentUser = JSON.parse(saved);
       el('login-page').classList.add('hidden');
       el('main-page').classList.remove('hidden');
-      el('user-display').textContent = currentUser.name;
+      
+      el('user-display').textContent = `(${currentUser.role}) ${currentUser.username}`;
       
       updateAdminUI();
       switchTab('pending');
