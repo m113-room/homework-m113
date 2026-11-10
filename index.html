@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
-    * { box-sizing: border-box; }
+    * { box-fsizing: border-box; }
     html, body { min-height: 100%; }
 
     body { 
@@ -36,6 +36,8 @@
       width: 100%;
       margin-left: auto;
       margin-right: auto;
+      overflow: hidden;
+      transform: translateZ(0);
     }
 
     @keyframes pop {
@@ -109,7 +111,6 @@
           <button id="btn-options" onclick="openOptions()" title="จัดการวิชา" class="w-8 h-8 rounded-full bg-sky-50 text-sky-600 items-center justify-center text-xs hover:bg-sky-100 transition hidden">
             <i class="fa-solid fa-list-check"></i>
           </button>
-          <!-- ปุ่มรีเฟรชเรียกฟังก์ชันซิงค์พร้อมป๊อปอัพ -->
           <button onclick="syncDataWithPopup()" title="รีเฟรช" class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs hover:bg-slate-200 transition">
             <i class="fa-solid fa-rotate"></i>
           </button>
@@ -125,7 +126,7 @@
 
       <nav class="grid grid-cols-3 gap-1 bg-slate-100/80 rounded-2xl p-1 mb-4 text-center">
         <button id="tab-pending" onclick="switchTab('pending')" class="py-2.5 rounded-xl text-xs font-extrabold transition">ภาพรวมงานค้าง</button>
-        <button id="tab-calendar" onclick="switchTab('calendar')" class="py-2.5 rounded-xl text-xs font-extrabold transition">ปฏิทินงาน</button>
+        <button id="tab-calendar" onclick="switchTab('calendar')" class="py-2.5 rounded-xl text-xs font-extrabold transition">ปฏิทิน</button>
         <button id="tab-tracking" onclick="switchTab('tracking')" class="py-2.5 rounded-xl text-xs font-extrabold transition">งานค้าง</button>
       </nav>
 
@@ -230,11 +231,16 @@
           <h3 class="text-xs font-bold text-pink-600 mb-1">เพิ่มรายการการบ้าน</h3>
           
           <div class="grid grid-cols-2 gap-2">
-            <input id="task-code" list="code-options" placeholder="รหัสวิชา" oninput="autoFillSubject('code')" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-white">
-            <input id="task-subject" list="subject-options" placeholder="ชื่อวิชา" oninput="autoFillSubject('subject')" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-white">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-1">รหัสวิชา:</label>
+              <input id="task-code" type="text" list="code-suggestions" oninput="onCodeInput()" placeholder="พิมพ์รหัสวิชา" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-white font-semibold text-slate-700">
+              <datalist id="code-suggestions"></datalist>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-1">ชื่อวิชา:</label>
+              <input id="task-subject" type="text" placeholder="พิมพ์ชื่อวิชา" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-white font-semibold text-slate-700">
+            </div>
           </div>
-          <datalist id="code-options"></datalist>
-          <datalist id="subject-options"></datalist>
 
           <input id="task-detail" placeholder="รายละเอียดการบ้าน" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-white">
           
@@ -284,7 +290,7 @@
         การส่งการบ้าน
       </button>
       <div>
-        <span class="text-[10px] text-slate-500 font-bold">(V.1.5 Bug fixed 😃😃)</span>
+        <span class="text-[10px] text-slate-500 font-bold">(V.2.09)</span>
       </div>
     </div>
 
@@ -522,7 +528,6 @@ function logout() {
   location.reload();
 }
 
-// ฟังก์ชันกดรีเฟรชพร้อมแสดงป๊อปอัพ "กำลังซิงค์ข้อมูล..."
 async function syncDataWithPopup() {
   showLoading('กำลังซิงค์ข้อมูล...');
   try {
@@ -614,23 +619,22 @@ function buildSubjectMap(options) {
   });
 }
 
-function autoFillSubject(type) {
-  const codeInput = el('task-code');
+function onCodeInput() {
+  const codeVal = el('task-code').value.toLowerCase().trim();
   const subjectInput = el('task-subject');
-  const query = (type === 'code' ? codeInput.value : subjectInput.value).toLowerCase().trim();
-  if (!query) return;
+
+  if (!codeVal) return;
 
   let found = null;
   for (let key in subjectMap) {
-    if (key.includes(query) || query.includes(key)) {
+    if (key === codeVal) {
       found = subjectMap[key];
       break;
     }
   }
 
-  if (found) {
-    if (found.code) codeInput.value = found.code;
-    if (found.subject) subjectInput.value = found.subject;
+  if (found && found.subject) {
+    subjectInput.value = found.subject;
   }
 }
 
@@ -946,7 +950,9 @@ async function addTask() {
 
   const updatedTasks = [task, ...tasks];
 
-  const success = await execute('กำลังบันทึกการบ้านและอัพโหลดรูป', async () => {
+  const loadingText = imageObj ? 'กำลังบันทึกการบ้านและอัพโหลดรูป' : 'กำลังบันทึกการบ้าน';
+
+  const success = await execute(loadingText, async () => {
     await sendSaveRequest('saveTasks', updatedTasks);
   });
 
@@ -957,7 +963,9 @@ async function addTask() {
     cachedData.tasks = tasks;
     localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
 
-    ['task-code', 'task-subject', 'task-detail', 'task-assign-date', 'task-due-date', 'task-image'].forEach(id => {
+    el('task-code').value = '';
+    el('task-subject').value = '';
+    ['task-detail', 'task-assign-date', 'task-due-date', 'task-image'].forEach(id => {
       if(el(id)) el(id).value = '';
     });
     el('task-form').classList.add('hidden');
@@ -1254,24 +1262,23 @@ async function deleteEvent(key, index) {
 }
 
 function updateOptions() {
-  el('code-options').innerHTML = '';
-  el('subject-options').innerHTML = '';
-  
   const filterSubjSelect = el('filter-subject');
+  const codeDatalist = el('code-suggestions');
+  
   const currentSelectedFilter = filterSubjSelect.value;
+
   filterSubjSelect.innerHTML = '<option value="">ทุกวิชา</option>';
+  if (codeDatalist) codeDatalist.innerHTML = '';
 
   codes.forEach(code => {
-    const option = document.createElement('option');
-    option.value = code;
-    el('code-options').appendChild(option);
+    if (codeDatalist) {
+      const option = document.createElement('option');
+      option.value = code;
+      codeDatalist.appendChild(option);
+    }
   });
 
   subjects.forEach(subject => {
-    const option = document.createElement('option');
-    option.value = subject;
-    el('subject-options').appendChild(option);
-
     const filterOpt = document.createElement('option');
     filterOpt.value = subject;
     filterOpt.textContent = subject;
