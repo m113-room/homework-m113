@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
-    * { box-fsizing: border-box; }
+    * { box-sizing: border-box; }
     html, body { min-height: 100%; }
 
     body { 
@@ -52,8 +52,8 @@
       cursor: not-allowed;
     }
 
-    input, select { outline: none; }
-    input:focus, select:focus { border-color: #ec4899 !important; box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.2); }
+    input, select, textarea { outline: none; }
+    input:focus, select:focus, textarea:focus { border-color: #ec4899 !important; box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.2); }
   </style>
 </head>
 
@@ -120,12 +120,41 @@
         </div>
       </header>
 
+      <!-- Announcement Banner -->
+      <div id="announcement-banner" class="hidden bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-2xl p-3.5 mb-4 shadow-md relative overflow-hidden">
+        <div class="flex items-start gap-2.5">
+          <div class="text-base mt-0.5"><i class="fa-solid fa-bullhorn"></i></div>
+          <div class="flex-1">
+            <h4 class="text-xs font-extrabold tracking-wide uppercase mb-0.5">ประกาศ</h4>
+            <p id="announcement-text" class="text-xs font-semibold leading-relaxed whitespace-pre-wrap"></p>
+          </div>
+          <button id="btn-delete-announcement" onclick="deleteAnnouncement()" class="hidden text-white/80 hover:text-white p-1 text-xs" title="ลบประกาศ">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ปุ่มเพิ่มประกาศ (แสดงสำหรับ Founder และ Admin) -->
+      <div id="admin-announcement-control" class="hidden mb-4">
+        <button onclick="toggleForm('announcement-form')" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-extrabold py-2.5 rounded-2xl text-xs shadow-sm hover:opacity-95 transition">
+          <i class="fa-solid fa-bullhorn"></i> + ประกาศ
+        </button>
+
+        <div id="announcement-form" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-3.5 mt-2 space-y-2.5 shadow-sm">
+          <textarea id="announcement-input" rows="3" class="w-full border border-amber-300 rounded-xl p-2.5 text-xs bg-white font-medium text-slate-700" placeholder="พิมพ์ข้อความประกาศสำคัญที่นี่..."></textarea>
+          <div class="flex gap-2">
+            <button onclick="saveAnnouncement()" class="flex-1 bg-amber-500 text-white rounded-xl py-2 text-xs font-extrabold hover:bg-amber-600 transition shadow-sm">บันทึกและเผยแพร่</button>
+            <button onclick="toggleForm('announcement-form')" class="bg-slate-200 text-slate-600 px-3 rounded-xl py-2 text-xs font-bold">ยกเลิก</button>
+          </div>
+        </div>
+      </div>
+
       <div id="sync-status" class="bg-slate-50 text-slate-600 p-2.5 rounded-2xl text-[11px] font-bold mb-4 text-center border border-slate-100">
         <i class="fa-solid fa-circle-info"></i> พร้อมใช้งาน
       </div>
 
       <nav class="grid grid-cols-3 gap-1 bg-slate-100/80 rounded-2xl p-1 mb-4 text-center">
-        <button id="tab-pending" onclick="switchTab('pending')" class="py-2.5 rounded-xl text-xs font-extrabold transition">ภาพรวมงานค้าง</button>
+        <button id="tab-pending" onclick="switchTab('pending')" class="py-2.5 rounded-xl text-xs font-extrabold transition">ภาพรวม</button>
         <button id="tab-calendar" onclick="switchTab('calendar')" class="py-2.5 rounded-xl text-xs font-extrabold transition">ปฏิทิน</button>
         <button id="tab-tracking" onclick="switchTab('tracking')" class="py-2.5 rounded-xl text-xs font-extrabold transition">งานค้าง</button>
       </nav>
@@ -290,7 +319,7 @@
         การส่งการบ้าน
       </button>
       <div>
-        <span class="text-[10px] text-slate-500 font-bold">(V.2.09)</span>
+        <span class="text-[10px] text-slate-500 font-bold">(V.2.18)</span>
       </div>
     </div>
 
@@ -326,6 +355,7 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxPMdLygwBXKBmasT3GM
 let currentUser = null;
 let tasks = [];
 let dailyEvents = {};
+let currentAnnouncement = '';
 let codes = [];
 let subjects = [];
 let subjectMap = {};
@@ -461,22 +491,36 @@ async function execute(label, action) {
   }
 }
 
-function isAdmin() { 
-  return currentUser && ['admin', 'creator'].includes(String(currentUser.role || '').toLowerCase()); 
+function isFounder() {
+  if (!currentUser || !currentUser.role) return false;
+  return String(currentUser.role).toLowerCase().trim() === 'founder';
+}
+
+function isAdmin() {
+  if (!currentUser || !currentUser.role) return false;
+  const role = String(currentUser.role).toLowerCase().trim();
+  return ['founder', 'admin'].includes(role);
 }
 
 function updateAdminUI() {
-  const isUserAdmin = isAdmin();
-  if (isUserAdmin) {
+  if (isFounder()) {
     el('btn-logs').classList.remove('hidden');
     el('btn-logs').classList.add('flex');
-    el('btn-options').classList.remove('hidden');
-    el('btn-options').classList.add('flex');
   } else {
     el('btn-logs').classList.add('hidden');
     el('btn-logs').classList.remove('flex');
+  }
+
+  if (isAdmin()) {
+    el('btn-options').classList.remove('hidden');
+    el('btn-options').classList.add('flex');
+    el('admin-announcement-control').classList.remove('hidden');
+    el('btn-delete-announcement').classList.remove('hidden');
+  } else {
     el('btn-options').classList.add('hidden');
     el('btn-options').classList.remove('flex');
+    el('admin-announcement-control').classList.add('hidden');
+    el('btn-delete-announcement').classList.add('hidden');
   }
 }
 
@@ -498,7 +542,7 @@ async function login() {
     if (res && res.success && res.user) {
       currentUser = {
         username: res.user.username || res.user.Username || inputVal,
-        role: String(res.user.role || 'member').toLowerCase()
+        role: String(res.user.role || 'member').toLowerCase().trim()
       };
 
       localStorage.setItem('homeworkLastUser', currentUser.username);
@@ -512,7 +556,9 @@ async function login() {
       updateAdminUI();
       switchTab('pending');
 
+      localStorage.removeItem('homeworkCacheData');
       await loadAllData(false);
+
       logActivity('เข้าสู่ระบบ', `ผู้ใช้งาน ${currentUser.username} (${currentUser.role}) เข้าสู่ระบบสำเร็จ`);
     } else {
       throw new Error(res.error || 'ไม่พบบัญชี');
@@ -548,10 +594,12 @@ async function loadAllData(showMessage = false) {
       const parsed = JSON.parse(cachedData);
       tasks = parsed.tasks || [];
       dailyEvents = parsed.events || {};
+      currentAnnouncement = parsed.announcement || '';
       codes = parsed.options?.codes || [];
       subjects = parsed.options?.subjects || [];
       buildSubjectMap(parsed.options);
       updateOptions();
+      renderAnnouncement();
       renderTasks();
       renderCalendar();
       selectDate(selectedDate);
@@ -563,6 +611,7 @@ async function loadAllData(showMessage = false) {
     if (res) {
       tasks = Array.isArray(res.tasks) ? res.tasks : [];
       dailyEvents = res.events || {};
+      currentAnnouncement = res.announcement || '';
       codes = res.options?.codes || [];
       subjects = res.options?.subjects || [];
       buildSubjectMap(res.options);
@@ -570,6 +619,7 @@ async function loadAllData(showMessage = false) {
       localStorage.setItem('homeworkCacheData', JSON.stringify(res));
 
       updateOptions();
+      renderAnnouncement();
       renderTasks();
       renderCalendar();
       selectDate(selectedDate);
@@ -587,6 +637,90 @@ async function loadAllData(showMessage = false) {
       load().catch(e => console.error(e));
     }
   }
+}
+
+function renderAnnouncement() {
+  const banner = el('announcement-banner');
+  const textEl = el('announcement-text');
+  
+  if (currentAnnouncement && String(currentAnnouncement).trim() !== '') {
+    textEl.textContent = currentAnnouncement;
+    banner.classList.remove('hidden');
+  } else {
+    banner.classList.add('hidden');
+  }
+}
+
+async function saveAnnouncement() {
+  const text = el('announcement-input').value.trim();
+  if (!text) {
+    showAlert('กรุณากรอกข้อความประกาศ');
+    return;
+  }
+
+  currentAnnouncement = text;
+  renderAnnouncement();
+  el('announcement-form').classList.add('hidden');
+  el('announcement-input').value = '';
+
+  const cachedData = JSON.parse(localStorage.getItem('homeworkCacheData') || '{}');
+  cachedData.announcement = currentAnnouncement;
+  localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
+
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'saveAnnouncement', announcement: currentAnnouncement })
+  }).catch(e => console.error('Announcement Error:', e));
+
+  logActivity('ประกาศ', `ผู้ดูแลระบบเพิ่มประกาศ: ${text}`);
+  showAlert('เผยแพร่ประกาศเรียบร้อยแล้ว');
+}
+
+async function deleteAnnouncement() {
+  const modalContent = `
+    <div class="text-center space-y-4">
+      <div class="w-12 h-12 mx-auto bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center text-xl shadow-inner">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <div>
+        <h4 class="font-extrabold text-sm text-slate-800">ยืนยันการลบประกาศ</h4>
+        <p class="text-xs text-slate-500 mt-1">ต้องการลบข้อความประกาศนี้ใช่หรือไม่?</p>
+      </div>
+      <div class="grid grid-cols-2 gap-2 pt-2">
+        <button onclick="closeModal()" class="w-full bg-slate-100 text-slate-600 py-2.5 rounded-xl text-xs font-extrabold hover:bg-slate-200 transition">
+          ยกเลิก
+        </button>
+        <button id="confirm-delete-ann-btn" class="w-full bg-rose-500 text-white py-2.5 rounded-xl text-xs font-extrabold hover:bg-rose-600 transition shadow-sm">
+          ลบประกาศ
+        </button>
+      </div>
+    </div>
+  `;
+
+  openModal('แจ้งเตือน', modalContent);
+
+  document.getElementById('confirm-delete-ann-btn').onclick = async () => {
+    closeModal();
+
+    currentAnnouncement = '';
+    renderAnnouncement();
+
+    const cachedData = JSON.parse(localStorage.getItem('homeworkCacheData') || '{}');
+    cachedData.announcement = '';
+    localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
+
+    fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'saveAnnouncement', announcement: '' })
+    }).catch(e => console.error('Announcement Delete Error:', e));
+
+    logActivity('ลบประกาศ', 'ผู้ดูแลระบบลบประกาศ');
+    showAlert('ลบประกาศเรียบร้อยแล้ว');
+  };
 }
 
 function buildSubjectMap(options) {
@@ -863,7 +997,7 @@ function createTrackingCard(task) {
 }
 
 function toggleForm(id) {
-  ['task-form', 'student-form', 'event-form'].forEach(name => {
+  ['task-form', 'student-form', 'event-form', 'announcement-form'].forEach(name => {
     if (name !== id && el(name)) el(name).classList.add('hidden');
   });
   if(el(id)) el(id).classList.toggle('hidden');
@@ -873,6 +1007,7 @@ async function sendSaveRequest(action, payloadData = null) {
   let bodyData = { action: action };
   if (action === 'saveTasks') bodyData.tasks = payloadData;
   if (action === 'saveEvents') bodyData.events = payloadData;
+  if (action === 'saveAnnouncement') bodyData.announcement = payloadData;
 
   await fetch(SCRIPT_URL, {
     method: 'POST',
@@ -1240,25 +1375,50 @@ async function addEvent() {
 }
 
 async function deleteEvent(key, index) {
-  if (!confirm('ต้องการลบกิจกรรมนี้ใช่หรือไม่?')) return;
+  const modalContent = `
+    <div class="text-center space-y-4">
+      <div class="w-12 h-12 mx-auto bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center text-xl shadow-inner">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <div>
+        <h4 class="font-extrabold text-sm text-slate-800">ยืนยันการลบกิจกรรม</h4>
+        <p class="text-xs text-slate-500 mt-1">ต้องการลบกิจกรรมนี้ใช่หรือไม่?</p>
+      </div>
+      <div class="grid grid-cols-2 gap-2 pt-2">
+        <button onclick="closeModal()" class="w-full bg-slate-100 text-slate-600 py-2.5 rounded-xl text-xs font-extrabold hover:bg-slate-200 transition">
+          ยกเลิก
+        </button>
+        <button id="confirm-delete-evt-btn" class="w-full bg-rose-500 text-white py-2.5 rounded-xl text-xs font-extrabold hover:bg-rose-600 transition shadow-sm">
+          ลบข้อมูล
+        </button>
+      </div>
+    </div>
+  `;
 
-  const rawEvent = dailyEvents[key];
-  const events = Array.isArray(rawEvent) ? rawEvent : (rawEvent ? [rawEvent] : []);
+  openModal('แจ้งเตือน', modalContent);
 
-  if (events.length > 0) {
-    const removed = events.splice(index, 1);
-    if (events.length === 0) delete dailyEvents[key];
-    else dailyEvents[key] = events;
+  document.getElementById('confirm-delete-evt-btn').onclick = async () => {
+    closeModal();
 
-    selectDate(selectedDate);
+    const rawEvent = dailyEvents[key];
+    const events = Array.isArray(rawEvent) ? rawEvent : (rawEvent ? [rawEvent] : []);
 
-    const cachedData = JSON.parse(localStorage.getItem('homeworkCacheData') || '{}');
-    cachedData.events = dailyEvents;
-    localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
+    if (events.length > 0) {
+      const removed = events.splice(index, 1);
+      if (events.length === 0) delete dailyEvents[key];
+      else dailyEvents[key] = events;
 
-    sendSaveRequest('saveEvents', dailyEvents);
-    logActivity('ลบกิจกรรม', `วันที่ ${formatDate(key)}: ${removed}`);
-  }
+      selectDate(selectedDate);
+
+      const cachedData = JSON.parse(localStorage.getItem('homeworkCacheData') || '{}');
+      cachedData.events = dailyEvents;
+      localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
+
+      sendSaveRequest('saveEvents', dailyEvents);
+      logActivity('ลบกิจกรรม', `วันที่ ${formatDate(key)}: ${removed}`);
+      showAlert('ลบกิจกรรมเรียบร้อยแล้ว');
+    }
+  };
 }
 
 function updateOptions() {
@@ -1356,8 +1516,8 @@ function openOptions() {
 }
 
 async function openLogs() {
-  if (!isAdmin()) {
-    showAlert('คุณไม่มีสิทธิ์เข้าถึงส่วนนี้');
+  if (!isFounder()) {
+    showAlert('เฉพาะยศ Founder เท่านั้นที่สามารถดูประวัติการใช้งานได้');
     return;
   }
 
@@ -1414,14 +1574,37 @@ async function openLogs() {
 }
 
 async function clearLogs() {
-  if (!confirm('ล้างประวัติทั้งหมดใช่หรือไม่?')) return;
+  const modalContent = `
+    <div class="text-center space-y-4">
+      <div class="w-12 h-12 mx-auto bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center text-xl shadow-inner">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <div>
+        <h4 class="font-extrabold text-sm text-slate-800">ยืนยันการล้างประวัติ</h4>
+        <p class="text-xs text-slate-500 mt-1">ต้องการลบประวัติการใช้งานทั้งหมดใช่หรือไม่?</p>
+      </div>
+      <div class="grid grid-cols-2 gap-2 pt-2">
+        <button onclick="closeModal()" class="w-full bg-slate-100 text-slate-600 py-2.5 rounded-xl text-xs font-extrabold hover:bg-slate-200 transition">
+          ยกเลิก
+        </button>
+        <button id="confirm-clear-logs-btn" class="w-full bg-rose-500 text-white py-2.5 rounded-xl text-xs font-extrabold hover:bg-rose-600 transition shadow-sm">
+          ล้างประวัติ
+        </button>
+      </div>
+    </div>
+  `;
 
-  await execute('กำลังล้างประวัติ...', async () => {
-    await sendSaveRequest('clearLogs');
-  });
+  openModal('แจ้งเตือน', modalContent);
 
-  isAllLogsLoaded = false;
-  openLogs();
+  document.getElementById('confirm-clear-logs-btn').onclick = async () => {
+    closeModal();
+    await execute('กำลังล้างประวัติ...', async () => {
+      await sendSaveRequest('clearLogs');
+    });
+
+    isAllLogsLoaded = false;
+    openLogs();
+  };
 }
 
 function logActivity(actionText, details) {
@@ -1466,4 +1649,3 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 </body>
 </html>
-
