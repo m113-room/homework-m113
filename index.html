@@ -319,7 +319,7 @@
         การส่งการบ้าน
       </button>
       <div>
-        <span class="text-[10px] text-slate-500 font-bold">(V.2.18)</span>
+        <span class="text-[10px] text-slate-500 font-bold">(V.2.19)</span>
       </div>
     </div>
 
@@ -593,6 +593,9 @@ async function loadAllData(showMessage = false) {
     try {
       const parsed = JSON.parse(cachedData);
       tasks = parsed.tasks || [];
+      // กรอง ID ซ้ำใน Cache ทันที
+      tasks = tasks.filter((task, index, self) => index === self.findIndex((t) => (t.id === task.id)));
+      
       dailyEvents = parsed.events || {};
       currentAnnouncement = parsed.announcement || '';
       codes = parsed.options?.codes || [];
@@ -610,6 +613,9 @@ async function loadAllData(showMessage = false) {
     const res = await fetchJSON(`${SCRIPT_URL}?t=${Date.now()}`);
     if (res) {
       tasks = Array.isArray(res.tasks) ? res.tasks : [];
+      // กรอง ID ที่ซ้ำกันออกทันที ป้องกันข้อมูลซ้ำจากชีต
+      tasks = tasks.filter((task, index, self) => index === self.findIndex((t) => (t.id === task.id)));
+
       dailyEvents = res.events || {};
       currentAnnouncement = res.announcement || '';
       codes = res.options?.codes || [];
