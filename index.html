@@ -278,9 +278,14 @@
               <span class="text-[10px] font-bold text-slate-500 mr-2 leading-tight">วัน<br>สั่ง:</span>
               <input id="task-assign-date" type="date" class="w-full text-xs bg-transparent border-0 p-0">
             </div>
-            <div class="flex items-center bg-white border border-slate-200 rounded-xl px-2.5 py-1.5">
-              <span class="text-[10px] font-bold text-slate-500 mr-2 leading-tight">วัน<br>ส่ง:</span>
-              <input id="task-due-date" type="date" class="w-full text-xs bg-transparent border-0 p-0">
+            <div class="flex flex-col bg-white border border-slate-200 rounded-xl px-2.5 py-1.5">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold text-slate-500 leading-tight">วันส่ง:</span>
+                <label class="text-[10px] text-pink-600 font-bold flex items-center gap-1 cursor-pointer">
+                  <input type="checkbox" id="task-no-due" onchange="toggleNoDueDateInput('task')" class="rounded text-pink-500 focus:ring-0"> ยังไม่กำหนด
+                </label>
+              </div>
+              <input id="task-due-date" type="date" class="w-full text-xs bg-transparent border-0 p-0 mt-1">
             </div>
           </div>
 
@@ -319,7 +324,7 @@
         การส่งการบ้าน
       </button>
       <div>
-        <span class="text-[10px] text-slate-500 font-bold">(V.1.51)</span>
+        <span class="text-[10px] text-slate-500 font-bold">(V.2.22)</span>
       </div>
     </div>
 
@@ -396,6 +401,7 @@ function dateKey(date) {
 function normalizeDateStr(value) {
   if (!value) return '';
   const str = String(value).trim();
+  if (str === 'ยังไม่กำหนด' || str === 'ไม่กำหนด' || str === '-') return '';
   if (str.length === 10 && str.charAt(4) === '-' && str.charAt(7) === '-') {
     return str;
   }
@@ -409,7 +415,7 @@ function normalizeDateStr(value) {
 }
 
 function formatDate(value) {
-  if (!value) return '-';
+  if (!value || value === 'ยังไม่กำหนด' || value === 'ไม่กำหนด' || value === '-') return 'ยังไม่กำหนดส่ง';
   const str = String(value).trim();
   
   const monthMap = {
@@ -516,7 +522,7 @@ function updateAdminUI() {
     el('btn-options').classList.add('flex');
     el('admin-announcement-control').classList.remove('hidden');
     el('btn-delete-announcement').classList.remove('hidden');
-  } else
+  } else {
     el('btn-options').classList.add('hidden');
     el('btn-options').classList.remove('flex');
     el('admin-announcement-control').classList.add('hidden');
@@ -593,7 +599,6 @@ async function loadAllData(showMessage = false) {
     try {
       const parsed = JSON.parse(cachedData);
       tasks = parsed.tasks || [];
-      // กรอง ID ซ้ำใน Cache ทันที
       tasks = tasks.filter((task, index, self) => index === self.findIndex((t) => (t.id === task.id)));
       
       dailyEvents = parsed.events || {};
@@ -613,7 +618,6 @@ async function loadAllData(showMessage = false) {
     const res = await fetchJSON(`${SCRIPT_URL}?t=${Date.now()}`);
     if (res) {
       tasks = Array.isArray(res.tasks) ? res.tasks : [];
-      // กรอง ID ที่ซ้ำกันออกทันที ป้องกันข้อมูลซ้ำจากชีต
       tasks = tasks.filter((task, index, self) => index === self.findIndex((t) => (t.id === task.id)));
 
       dailyEvents = res.events || {};
@@ -778,6 +782,20 @@ function onCodeInput() {
   }
 }
 
+function toggleNoDueDateInput(prefix) {
+  const checkbox = el(prefix + '-no-due');
+  const dateInput = el(prefix + '-due-date');
+  if (checkbox && dateInput) {
+    dateInput.disabled = checkbox.checked;
+    if (checkbox.checked) {
+      dateInput.value = '';
+      dateInput.classList.add('opacity-40');
+    } else {
+      dateInput.classList.remove('opacity-40');
+    }
+  }
+}
+
 function switchTab(tab) {
   currentTab = tab;
   ['pending', 'calendar', 'tracking'].forEach(name => {
@@ -825,8 +843,8 @@ function renderTasks() {
 
   filteredTasks.sort((a, b) => {
     if (dateMode === 'due-soon') {
-      const dateA = a.dueDate ? new Date(a.dueDate).getTime() : 0;
-      const dateB = b.dueDate ? new Date(b.dueDate).getTime() : 0;
+      const dateA = (!a.dueDate || a.dueDate === 'ยังไม่กำหนด' || a.dueDate === 'ไม่กำหนด') ? 8640000000000000 : new Date(a.dueDate).getTime();
+      const dateB = (!b.dueDate || b.dueDate === 'ยังไม่กำหนด' || b.dueDate === 'ไม่กำหนด') ? 8640000000000000 : new Date(b.dueDate).getTime();
       return dateA - dateB;
     } else if (dateMode === 'assign-new') {
       const dateA = a.assignDate ? new Date(a.assignDate).getTime() : 0;
@@ -875,6 +893,18 @@ function createTaskCard(task) {
     </div>
   ` : '';
 
+  const pinButtonHTML = isAdmin() ? `
+    <button data-action="pin" class="text-amber-500 hover:text-amber-600 p-1" title="ปักหมุด">
+      <i class="fa-solid fa-thumbtack"></i>
+    </button>
+  ` : '';
+
+  const adminControls = isAdmin() ? `
+    <button data-action="edit" class="text-sky-500 hover:text-sky-600 p-1" title="แก้ไขการบ้าน">
+      <i class="fa-solid fa-pen-to-square"></i>
+    </button>
+  ` : '';
+
   div.innerHTML = `
     <div class="flex justify-between items-start gap-2">
       <div class="flex-1">
@@ -891,9 +921,8 @@ function createTaskCard(task) {
       </div>
 
       <div class="flex gap-1.5">
-        <button data-action="pin" class="text-amber-500 hover:text-amber-600 p-1" title="ปักหมุด">
-          <i class="fa-solid fa-thumbtack"></i>
-        </button>
+        ${pinButtonHTML}
+        ${adminControls}
         <button data-action="delete" class="text-rose-500 hover:text-rose-600 p-1" title="ลบ">
           <i class="fa-solid fa-trash"></i>
         </button>
@@ -911,7 +940,10 @@ function createTaskCard(task) {
     </div>
   `;
 
-  div.querySelector('[data-action="pin"]').onclick = () => togglePin(task.id);
+  if (isAdmin()) {
+    div.querySelector('[data-action="pin"]').onclick = () => togglePin(task.id);
+    div.querySelector('[data-action="edit"]').onclick = () => openEditTaskModal(task.id);
+  }
   div.querySelector('[data-action="delete"]').onclick = () => deleteTask(task.id);
 
   return div;
@@ -951,6 +983,18 @@ function createTrackingCard(task) {
     </div>
   ` : '';
 
+  const pinButtonHTML = isAdmin() ? `
+    <button data-action="pin" class="text-amber-500 hover:text-amber-600 p-1" title="ปักหมุด">
+      <i class="fa-solid fa-thumbtack"></i>
+    </button>
+  ` : '';
+
+  const adminControls = isAdmin() ? `
+    <button data-action="edit" class="text-sky-500 hover:text-sky-600 p-1" title="แก้ไขการบ้าน">
+      <i class="fa-solid fa-pen-to-square"></i>
+    </button>
+  ` : '';
+
   div.innerHTML = `
     <div class="flex justify-between items-start gap-2">
       <div class="flex-1">
@@ -966,9 +1010,8 @@ function createTrackingCard(task) {
         </div>
       </div>
       <div class="flex gap-1.5">
-        <button data-action="pin" class="text-amber-500 hover:text-amber-600 p-1" title="ปักหมุด">
-          <i class="fa-solid fa-thumbtack"></i>
-        </button>
+        ${pinButtonHTML}
+        ${adminControls}
         <button data-action="delete" class="text-rose-500 hover:text-rose-600 p-1" title="ลบ">
           <i class="fa-solid fa-trash"></i>
         </button>
@@ -987,7 +1030,10 @@ function createTrackingCard(task) {
     <div class="flex flex-wrap gap-1.5 pt-1" data-students></div>
   `;
 
-  div.querySelector('[data-action="pin"]').onclick = () => togglePin(task.id);
+  if (isAdmin()) {
+    div.querySelector('[data-action="pin"]').onclick = () => togglePin(task.id);
+    div.querySelector('[data-action="edit"]').onclick = () => openEditTaskModal(task.id);
+  }
   div.querySelector('[data-action="delete"]').onclick = () => deleteTask(task.id);
 
   const students = div.querySelector('[data-students]');
@@ -1052,9 +1098,11 @@ async function addTask() {
   const code = el('task-code').value.trim();
   const subject = el('task-subject').value.trim();
   const detail = el('task-detail').value.trim();
-  const dueDate = el('task-due-date').value;
+  
+  const noDueChecked = el('task-no-due').checked;
+  const dueDate = noDueChecked ? 'ยังไม่กำหนด' : el('task-due-date').value;
 
-  if (!code || !subject || !detail || !dueDate) {
+  if (!code || !subject || !detail || (!noDueChecked && !dueDate)) {
     showAlert('กรุณากรอกข้อมูลให้ครบ');
     return;
   }
@@ -1106,6 +1154,9 @@ async function addTask() {
 
     el('task-code').value = '';
     el('task-subject').value = '';
+    el('task-no-due').checked = false;
+    el('task-due-date').disabled = false;
+    el('task-due-date').classList.remove('opacity-40');
     ['task-detail', 'task-assign-date', 'task-due-date', 'task-image'].forEach(id => {
       if(el(id)) el(id).value = '';
     });
@@ -1117,6 +1168,95 @@ async function addTask() {
     logActivity('เพิ่มการบ้าน', `วิชา ${task.subject} (${task.code}) - ${task.detail}`);
     showAlert('บันทึกการบ้านสำเร็จแล้ว');
   }
+}
+
+function openEditTaskModal(id) {
+  const task = tasks.find(t => String(t.id) === String(id));
+  if (!task) return;
+
+  const isNoDue = !task.dueDate || task.dueDate === 'ยังไม่กำหนด' || task.dueDate === 'ไม่กำหนด';
+  const formattedDueDate = isNoDue ? '' : normalizeDateStr(task.dueDate);
+
+  const modalContent = `
+    <div class="space-y-3 text-left">
+      <div>
+        <label class="block text-xs font-extrabold text-slate-600 mb-1">รหัสวิชา:</label>
+        <input id="edit-task-code" type="text" value="${escapeHtml(task.code)}" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-white font-semibold text-slate-700">
+      </div>
+      <div>
+        <label class="block text-xs font-extrabold text-slate-600 mb-1">ชื่อวิชา:</label>
+        <input id="edit-task-subject" type="text" value="${escapeHtml(task.subject)}" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-white font-semibold text-slate-700">
+      </div>
+      <div>
+        <label class="block text-xs font-extrabold text-slate-600 mb-1">รายละเอียดการบ้าน:</label>
+        <textarea id="edit-task-detail" rows="3" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-white font-medium text-slate-700">${escapeHtml(task.detail)}</textarea>
+      </div>
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <div class="flex flex-col">
+          <label class="text-xs font-extrabold text-slate-600 mb-1">วันสั่ง:</label>
+          <input id="edit-task-assign-date" type="date" value="${normalizeDateStr(task.assignDate)}" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-white text-slate-700">
+        </div>
+        <div class="flex flex-col">
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-xs font-extrabold text-slate-600">วันส่ง:</label>
+            <label class="text-[10px] text-pink-600 font-bold flex items-center gap-1 cursor-pointer">
+              <input type="checkbox" id="edit-task-no-due" ${isNoDue ? 'checked' : ''} onchange="toggleNoDueDateInput('edit-task')" class="rounded text-pink-500 focus:ring-0"> ยังไม่กำหนด
+            </label>
+          </div>
+          <input id="edit-task-due-date" type="date" value="${formattedDueDate}" ${isNoDue ? 'disabled' : ''} class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-white text-slate-700 ${isNoDue ? 'opacity-40' : ''}">
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2 pt-3">
+        <button onclick="closeModal()" class="w-full bg-slate-100 text-slate-600 py-2.5 rounded-xl text-xs font-extrabold hover:bg-slate-200 transition">
+          ยกเลิก
+        </button>
+        <button onclick="saveEditTask('${task.id}')" class="w-full bg-sky-500 text-white py-2.5 rounded-xl text-xs font-extrabold hover:bg-sky-600 transition shadow-sm">
+          บันทึกการแก้ไข
+        </button>
+      </div>
+    </div>
+  `;
+
+  openModal('แก้ไขรายการการบ้าน', modalContent);
+}
+
+async function saveEditTask(id) {
+  const task = tasks.find(t => String(t.id) === String(id));
+  if (!task) return;
+
+  const code = el('edit-task-code').value.trim();
+  const subject = el('edit-task-subject').value.trim();
+  const detail = el('edit-task-detail').value.trim();
+  const assignDate = el('edit-task-assign-date').value;
+  
+  const noDueChecked = el('edit-task-no-due').checked;
+  const dueDate = noDueChecked ? 'ยังไม่กำหนด' : el('edit-task-due-date').value;
+
+  if (!code || !subject || !detail || (!noDueChecked && !dueDate)) {
+    showAlert('กรุณากรอกข้อมูลให้ครบถ้วน');
+    return;
+  }
+
+  task.code = code;
+  task.subject = subject;
+  task.detail = detail;
+  task.assignDate = assignDate;
+  task.dueDate = dueDate;
+
+  closeModal();
+
+  renderTasks();
+  renderCalendar();
+  selectDate(selectedDate);
+
+  const cachedData = JSON.parse(localStorage.getItem('homeworkCacheData') || '{}');
+  cachedData.tasks = tasks;
+  localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
+
+  sendSaveRequest('saveTasks', tasks);
+
+  logActivity('แก้ไขการบ้าน', `วิชา ${task.subject} (${task.code}) - ${task.detail}`);
+  showAlert('แก้ไขการบ้านเรียบร้อยแล้ว');
 }
 
 async function togglePin(id) {
@@ -1252,7 +1392,11 @@ function renderCalendar() {
   const firstDay = new Date(year, month, 1).getDay();
   const totalDays = new Date(year, month + 1, 0).getDate();
 
-  for (let i = 0; i < firstDay; i++) container.appendChild(document.createElement('div'));
+  for (let i = 0; i < firstDay; i++) {
+    const emptyCell = document.createElement('div');
+    emptyCell.className = 'h-14 rounded-2xl bg-transparent';
+    container.appendChild(emptyCell);
+  }
 
   for (let day = 1; day <= totalDays; day++) {
     const key = dateKey(new Date(year, month, day));
