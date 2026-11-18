@@ -17,7 +17,8 @@
     body { 
       font-family: 'Plus Jakarta Sans', 'Sarabun', sans-serif;
       margin: 0;
-      background: linear-gradient(135deg, #fbcfe8 0%, #e9d5ff 50%, #bae6fd 100%);
+      background: #f8fafc;
+      color: #1e293b;
     }
 
     .hidden { display: none !important; }
@@ -34,6 +35,7 @@
 
     .app-card {
       width: 100%;
+      max-width: 720px;
       margin-left: auto;
       margin-right: auto;
       overflow: hidden;
@@ -53,7 +55,7 @@
     }
 
     input, select, textarea { outline: none; }
-    input:focus, select:focus, textarea:focus { border-color: #ec4899 !important; box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.2); }
+    input:focus, select:focus, textarea:focus { border-color: #38bdf8 !important; box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2); }
   </style>
 </head>
 
@@ -61,7 +63,7 @@
 
   <div id="loading-overlay" class="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-[100] hidden flex items-center justify-center">
     <div class="bg-white rounded-3xl p-6 shadow-2xl text-center min-w-[180px]">
-      <div class="w-8 h-8 border-4 border-pink-400 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+      <div class="w-8 h-8 border-4 border-sky-400 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
       <p id="loading-text" class="text-xs font-bold text-slate-600">กำลังโหลด...</p>
     </div>
   </div>
@@ -71,13 +73,13 @@
     <div></div>
 
     <!-- Login Page -->
-    <div id="login-page" class="app-card max-w-sm bg-white/95 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white text-center">
-      <div class="w-16 h-16 mx-auto bg-gradient-to-br from-pink-500 via-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center text-white text-3xl mb-4 shadow-lg shadow-purple-200">
+    <div id="login-page" class="app-card max-w-sm bg-white rounded-3xl p-8 shadow-xl border border-slate-100 text-center">
+      <div class="w-16 h-16 mx-auto bg-gradient-to-br from-sky-400 to-indigo-500 rounded-2xl flex items-center justify-center text-white text-3xl mb-4 shadow-lg shadow-sky-100">
         <i class="fa-solid fa-book-open-reader"></i>
       </div>
 
       <h1 class="text-xl font-extrabold text-slate-800 mb-1">Homework M.113</h1>
-      <p class="text-[11px] text-slate-500 font-bold mb-6">ระบบการบ้านห้อง M.113</p>
+      <p class="text-[11px] text-slate-400 font-bold mb-6">ระบบการบ้านห้อง M.113</p>
 
       <div class="text-left mb-4">
         <label class="text-[11px] font-bold text-slate-600 ml-1">ชื่อผู้ใช้งาน (USERNAME)</label>
@@ -87,25 +89,36 @@
       </div>
 
       <button id="login-btn" onclick="login()"
-        class="w-full py-3 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-2xl font-extrabold text-sm shadow-md shadow-pink-200 hover:opacity-95 transition">
+        class="w-full py-3 bg-sky-500 text-white rounded-2xl font-extrabold text-sm shadow-md shadow-sky-100 hover:bg-sky-600 transition">
         เข้าสู่ระบบทันที
       </button>
     </div>
 
     <!-- Main Page -->
-    <main id="main-page" class="app-card hidden max-w-md bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-white">
+    <main id="main-page" class="app-card hidden bg-white rounded-3xl shadow-xl p-6 border border-slate-100">
 
-      <header class="flex items-center justify-between mb-4">
-        <div>
-          <div class="flex items-center gap-1.5">
-            <h1 class="font-extrabold text-pink-500 text-lg">HOMEWORK</h1>
-            <span class="bg-slate-800 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">M113</span>
+      <!-- ย้ายหัวข้อ "การบ้าน" และคำอธิบายขึ้นมาไว้ที่แถบด้านบนสุดเรียบร้อยแล้ว -->
+      <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
+        <div class="flex items-center gap-3 text-xs font-bold text-slate-500 flex-wrap">
+          <span class="text-slate-800 font-extrabold flex items-center gap-1.5"><i class="fa-solid fa-house text-sky-500"></i> <span id="user-display"></span></span>
+          <span class="text-slate-300">|</span>
+          <div class="flex items-baseline gap-2">
+            <h1 class="font-extrabold text-slate-800 text-base">การบ้าน</h1>
+            <span class="text-xs text-slate-400 font-medium hidden sm:inline">(กดที่การบ้านเพื่อดูรายละเอียดและเช็คชื่อส่งงาน)</span>
           </div>
-          <span id="user-display" class="inline-block mt-1 text-[11px] font-extrabold text-pink-600 bg-pink-50 px-2.5 py-0.5 rounded-full border border-pink-100"></span>
         </div>
+        <div class="flex items-center gap-2">
+          <button onclick="logout()" class="px-3 py-1.5 bg-rose-50 text-rose-500 rounded-xl text-[11px] font-extrabold hover:bg-rose-100 transition ml-1">LOGOUT</button>
+        </div>
+      </div>
+      <!-- สำหรับหน้าจอมือถือขนาดเล็ก จะแสดงคำอธิบายบรรทัดถัดมาแบบพอดี -->
+      <div class="text-[11px] text-slate-400 font-medium sm:hidden mb-4 -mt-2">
+        กดที่การบ้านเพื่อดูรายละเอียดและเช็คชื่อส่งงาน
+      </div>
 
+      <header class="flex items-center justify-end mb-4">
         <div class="flex items-center gap-1.5">
-          <button id="btn-logs" onclick="openLogs()" title="ประวัติการใช้งาน" class="w-8 h-8 rounded-full bg-pink-50 text-pink-600 items-center justify-center text-xs hover:bg-pink-100 transition hidden">
+          <button id="btn-logs" onclick="openLogs()" title="ประวัติการใช้งาน" class="w-8 h-8 rounded-full bg-slate-50 text-slate-600 items-center justify-center text-xs hover:bg-slate-100 transition hidden">
             <i class="fa-solid fa-clock-rotate-left"></i>
           </button>
           <button id="btn-options" onclick="openOptions()" title="จัดการวิชา" class="w-8 h-8 rounded-full bg-sky-50 text-sky-600 items-center justify-center text-xs hover:bg-sky-100 transition hidden">
@@ -113,9 +126,6 @@
           </button>
           <button onclick="syncDataWithPopup()" title="รีเฟรช" class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs hover:bg-slate-200 transition">
             <i class="fa-solid fa-rotate"></i>
-          </button>
-          <button onclick="logout()" class="px-3 py-1.5 bg-rose-50 text-rose-500 rounded-xl text-[11px] font-extrabold hover:bg-rose-100 transition ml-1">
-            LOGOUT
           </button>
         </div>
       </header>
@@ -134,33 +144,18 @@
         </div>
       </div>
 
-      <!-- ปุ่มเพิ่มประกาศ (แสดงสำหรับ Founder และ Admin) -->
-      <div id="admin-announcement-control" class="hidden mb-4">
-        <button onclick="toggleForm('announcement-form')" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-extrabold py-2.5 rounded-2xl text-xs shadow-sm hover:opacity-95 transition">
-          <i class="fa-solid fa-bullhorn"></i> + ประกาศ
-        </button>
-
-        <div id="announcement-form" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-3.5 mt-2 space-y-2.5 shadow-sm">
-          <textarea id="announcement-input" rows="3" class="w-full border border-amber-300 rounded-xl p-2.5 text-xs bg-white font-medium text-slate-700" placeholder="พิมพ์ข้อความประกาศสำคัญที่นี่..."></textarea>
-          <div class="flex gap-2">
-            <button onclick="saveAnnouncement()" class="flex-1 bg-amber-500 text-white rounded-xl py-2 text-xs font-extrabold hover:bg-amber-600 transition shadow-sm">บันทึกและเผยแพร่</button>
-            <button onclick="toggleForm('announcement-form')" class="bg-slate-200 text-slate-600 px-3 rounded-xl py-2 text-xs font-bold">ยกเลิก</button>
-          </div>
-        </div>
-      </div>
-
       <div id="sync-status" class="bg-slate-50 text-slate-600 p-2.5 rounded-2xl text-[11px] font-bold mb-4 text-center border border-slate-100">
         <i class="fa-solid fa-circle-info"></i> พร้อมใช้งาน
       </div>
 
-      <nav class="grid grid-cols-3 gap-1 bg-slate-100/80 rounded-2xl p-1 mb-4 text-center">
-        <button id="tab-pending" onclick="switchTab('pending')" class="py-2.5 rounded-xl text-xs font-extrabold transition">ภาพรวม</button>
+      <nav class="grid grid-cols-3 gap-1 bg-slate-100 rounded-2xl p-1 mb-4 text-center">
+        <button id="tab-pending" onclick="switchTab('pending')" class="py-2.5 rounded-xl text-xs font-extrabold transition">การบ้านทั้งหมด</button>
         <button id="tab-calendar" onclick="switchTab('calendar')" class="py-2.5 rounded-xl text-xs font-extrabold transition">ปฏิทิน</button>
-        <button id="tab-tracking" onclick="switchTab('tracking')" class="py-2.5 rounded-xl text-xs font-extrabold transition">งานค้าง</button>
+        <button id="tab-tracking" onclick="switchTab('tracking')" class="py-2.5 rounded-xl text-xs font-extrabold transition">จัดการ/เพิ่มงาน</button>
       </nav>
 
       <!-- Filter & Search Bar -->
-      <div id="filter-container" class="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 mb-4 space-y-3 shadow-sm">
+      <div id="filter-container" class="bg-slate-50 border border-slate-200/60 rounded-2xl p-3.5 mb-4 space-y-3 shadow-sm">
         <div class="flex items-center gap-2">
           <div class="relative flex-1">
             <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
@@ -184,32 +179,25 @@
         </div>
       </div>
 
+      <!-- Tab: Pending -->
       <section id="view-pending">
-        <div class="bg-amber-50/70 border border-amber-100 rounded-2xl p-3.5 mb-4">
+        <div id="pinned-section" class="mb-4">
           <h2 class="text-xs font-extrabold text-amber-600 mb-2 flex items-center gap-1.5">
             <i class="fa-solid fa-thumbtack"></i> ปักหมุดไว้
           </h2>
-          <div id="pinned-list" class="space-y-2"></div>
+          <div id="pinned-list" class="space-y-3"></div>
         </div>
 
         <div class="flex justify-between items-center mb-3">
-          <h2 class="text-xs font-extrabold text-pink-500">ภาพรวมงานค้าง</h2>
+          <h2 class="text-xs font-extrabold text-slate-700">ยังเปิดรับ <span id="task-open-count" class="text-slate-400 font-normal">0</span></h2>
           <span id="task-count" class="text-[10px] font-extrabold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">0 ITEMS</span>
         </div>
 
-        <div id="task-list" class="space-y-2.5"></div>
+        <div id="task-list" class="space-y-3"></div>
       </section>
 
+      <!-- Tab: Calendar -->
       <section id="view-calendar" class="hidden">
-        <button onclick="toggleForm('event-form')" class="w-full bg-[#38bdf8] text-white font-extrabold py-3 rounded-2xl text-xs mb-4 shadow-sm hover:opacity-95 transition">
-          + เพิ่มกิจกรรม
-        </button>
-
-        <div id="event-form" class="hidden bg-sky-50 border border-sky-100 rounded-2xl p-3.5 mb-4 space-y-2.5">
-          <input id="event-input" class="w-full border rounded-xl p-2.5 text-xs bg-white" placeholder="ชื่อกิจกรรม">
-          <button onclick="addEvent()" class="w-full bg-sky-500 text-white rounded-xl py-2 text-xs font-bold">บันทึกกิจกรรม</button>
-        </div>
-
         <div class="flex justify-between items-center mb-3">
           <h2 id="calendar-month-year" class="text-xs font-extrabold text-slate-700"></h2>
           <div class="flex gap-1 text-[10px] font-bold">
@@ -219,19 +207,13 @@
         </div>
 
         <div class="bg-white rounded-2xl p-3.5 border border-slate-100 shadow-sm mb-4">
-          <div class="grid grid-cols-7 text-center text-[10px] font-extrabold mb-2">
-            <span style="color: #ef4444;">SUN</span>
-            <span style="color: #eab308;">MON</span>
-            <span style="color: #ec4899;">TUE</span>
-            <span style="color: #22c55e;">WED</span>
-            <span style="color: #f97316;">THU</span>
-            <span style="color: #3b82f6;">FRI</span>
-            <span style="color: #a855f7;">SAT</span>
+          <div class="grid grid-cols-7 text-center text-[10px] font-extrabold mb-2 text-slate-400">
+            <span>SUN</span><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span>
           </div>
           <div id="calendar-days" class="grid grid-cols-7 gap-1.5"></div>
         </div>
 
-        <div class="bg-slate-50/60 border border-slate-100 rounded-2xl p-3.5">
+        <div class="bg-slate-50 border border-slate-100 rounded-2xl p-3.5">
           <div class="flex justify-between items-center mb-2">
             <h3 id="selected-date-label" class="font-extrabold text-xs text-slate-700"></h3>
             <span id="selected-date-count" class="text-[10px] font-extrabold text-slate-600 bg-slate-200/60 px-2 py-0.5 rounded-full">0 รายการ</span>
@@ -246,28 +228,63 @@
         </div>
       </section>
 
+      <!-- Tab: Tracking / จัดการงาน -->
       <section id="view-tracking" class="hidden">
-        <div class="grid grid-cols-2 gap-2 mb-4">
-          <button onclick="toggleForm('task-form')" class="bg-purple-600 text-white font-extrabold py-2.5 rounded-2xl text-xs shadow-sm hover:opacity-95 transition">
+        <!-- 3 ปุ่มเรียงในบรรทัดเดียวกัน -->
+        <div class="grid grid-cols-3 gap-2 mb-4">
+          <button onclick="toggleForm('announcement-form')" class="bg-amber-500 text-white font-extrabold py-2.5 px-2 rounded-2xl text-xs shadow-sm hover:opacity-95 transition truncate">
+            <i class="fa-solid fa-bullhorn"></i> ประกาศ
+          </button>
+          <button onclick="toggleForm('task-form')" class="bg-sky-500 text-white font-extrabold py-2.5 px-2 rounded-2xl text-xs shadow-sm hover:bg-sky-600 transition truncate">
             + เพิ่มการบ้าน
           </button>
-          <button onclick="toggleForm('student-form')" class="bg-blue-600 text-white font-extrabold py-2.5 rounded-2xl text-xs shadow-sm hover:opacity-95 transition">
-            <i class="fa-solid fa-user-plus"></i> เพิ่มรายชื่อคนค้าง
+          <button onclick="toggleForm('event-form')" class="bg-orange-500 text-white font-extrabold py-2.5 px-2 rounded-2xl text-xs shadow-sm hover:bg-orange-600 transition truncate">
+            + เพิ่มกิจกรรม
           </button>
         </div>
 
+        <!-- ฟอร์มประกาศ (ซ่อน/แสดงเมื่อกดปุ่ม) -->
+        <div id="admin-announcement-control" class="hidden mb-4">
+          <div id="announcement-form" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-3.5 space-y-2.5 shadow-sm">
+            <textarea id="announcement-input" rows="3" class="w-full border border-amber-300 rounded-xl p-2.5 text-xs bg-white font-medium text-slate-700" placeholder="พิมพ์ข้อความประกาศสำคัญที่นี่..."></textarea>
+            <div class="flex gap-2">
+              <button onclick="saveAnnouncement()" class="flex-1 bg-amber-500 text-white rounded-xl py-2 text-xs font-extrabold hover:bg-amber-600 transition shadow-sm">บันทึกและเผยแพร่</button>
+              <button onclick="toggleForm('announcement-form')" class="bg-slate-200 text-slate-600 px-3 rounded-xl py-2 text-xs font-bold">ยกเลิก</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ฟอร์มเพิ่มกิจกรรม -->
+        <div id="event-form" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4 space-y-3 shadow-sm">
+          <h3 class="text-xs font-bold text-amber-700 mb-1">เพิ่มกิจกรรมพิเศษ</h3>
+          
+          <div class="flex items-center bg-white border border-amber-300 rounded-xl px-2.5 py-1.5">
+            <span class="text-[10px] font-bold text-slate-500 mr-2 leading-tight shrink-0">วันจัด<br>กิจกรรม:</span>
+            <input id="event-date" type="date" class="w-full text-xs bg-transparent border-0 p-0 text-slate-700 font-semibold">
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 mb-1">ชื่อกิจกรรม:</label>
+            <input id="event-input" class="w-full p-2.5 border border-amber-300 rounded-xl text-xs bg-white text-slate-700 font-semibold" placeholder="พิมพ์ชื่อกิจกรรมที่นี่...">
+          </div>
+          <button onclick="addEventFromTracking()" class="w-full bg-amber-500 text-white rounded-xl py-2.5 text-xs font-extrabold hover:bg-amber-600 transition shadow-sm">บันทึกกิจกรรม</button>
+        </div>
+
         <div id="task-form" class="hidden bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-4 space-y-3 shadow-sm">
-          <h3 class="text-xs font-bold text-pink-600 mb-1">เพิ่มรายการการบ้าน</h3>
+          <h3 class="text-xs font-bold text-sky-600 mb-1">เพิ่มรายการการบ้าน</h3>
           
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="block text-[10px] font-bold text-slate-500 mb-1">รหัสวิชา:</label>
-              <input id="task-code" type="text" list="code-suggestions" oninput="onCodeInput()" placeholder="พิมพ์รหัสวิชา" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-white font-semibold text-slate-700">
-              <datalist id="code-suggestions"></datalist>
+              <select id="task-code" onchange="onCodeSelect()" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-white font-semibold text-slate-700">
+                <option value="">เลือกรหัสวิชา</option>
+              </select>
             </div>
             <div>
               <label class="block text-[10px] font-bold text-slate-500 mb-1">ชื่อวิชา:</label>
-              <input id="task-subject" type="text" placeholder="พิมพ์ชื่อวิชา" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-white font-semibold text-slate-700">
+              <select id="task-subject" onchange="onSubjectSelect()" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-white font-semibold text-slate-700">
+                <option value="">เลือกชื่อวิชา</option>
+              </select>
             </div>
           </div>
 
@@ -280,13 +297,19 @@
             </div>
             <div class="flex flex-col bg-white border border-slate-200 rounded-xl px-2.5 py-1.5">
               <div class="flex items-center justify-between">
-                <span class="text-[10px] font-bold text-slate-500 leading-tight">วันส่ง:</span>
-                <label class="text-[10px] text-pink-600 font-bold flex items-center gap-1 cursor-pointer">
-                  <input type="checkbox" id="task-no-due" onchange="toggleNoDueDateInput('task')" class="rounded text-pink-500 focus:ring-0"> ยังไม่กำหนด
+                <span class="text-[10px] font-bold text-slate-500 leading-tight shrink-0">วันส่ง:</span>
+                <label class="text-[10px] text-sky-600 font-bold flex items-center gap-1 cursor-pointer shrink-0">
+                  <input type="checkbox" id="task-no-due" onchange="toggleNoDueDateInput('task')" class="rounded text-sky-500 focus:ring-0"> ยังไม่กำหนด
                 </label>
               </div>
               <input id="task-due-date" type="date" class="w-full text-xs bg-transparent border-0 p-0 mt-1">
             </div>
+          </div>
+
+          <!-- ตัวเลือกงานที่ไม่ต้องใช้เลขที่ -->
+          <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl p-2.5">
+            <input type="checkbox" id="task-no-student" class="rounded text-sky-500 focus:ring-0 w-4 h-4">
+            <label for="task-no-student" class="text-xs font-bold text-slate-600 cursor-pointer">งานนี้ไม่ต้องเช็คชื่อส่งงาน (ไม่ต้องใช้เลขที่)</label>
           </div>
 
           <div>
@@ -294,22 +317,22 @@
             <input id="task-image" type="file" accept="image/*" class="w-full text-xs p-1.5 border border-slate-200 rounded-xl bg-white">
           </div>
 
-          <button onclick="addTask()" class="w-full bg-purple-600 text-white py-3 rounded-2xl font-extrabold text-xs shadow-sm hover:opacity-95 transition mt-2">
+          <button onclick="addTask()" class="w-full bg-sky-500 text-white py-3 rounded-2xl font-extrabold text-xs shadow-sm hover:bg-sky-600 transition mt-2">
             บันทึกข้อมูลการบ้าน
           </button>
         </div>
 
         <div id="student-form" class="hidden bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-4 space-y-3 shadow-sm">
-          <h3 class="text-xs font-bold text-pink-600 mb-1">เพิ่มเลขที่คนค้างงาน</h3>
+          <h3 class="text-xs font-bold text-sky-600 mb-1">เพิ่มเลขที่คนค้างงาน</h3>
           <select id="student-task-select" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-white"></select>
           <input id="student-number" type="number" min="1" placeholder="เลขที่นักเรียน" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-white">
-          <button onclick="addExtraStudent()" class="w-full bg-blue-600 text-white py-3 rounded-2xl font-extrabold text-xs shadow-sm hover:opacity-95 transition mt-2">
+          <button onclick="addExtraStudent()" class="w-full bg-indigo-600 text-white py-3 rounded-2xl font-extrabold text-xs shadow-sm hover:bg-indigo-700 transition mt-2">
             บันทึก
           </button>
         </div>
 
         <div class="flex justify-between items-center mb-3">
-          <h2 class="text-xs font-extrabold text-pink-500">เช็คงานค้าง (สถานะการส่งงาน)</h2>
+          <h2 class="text-xs font-extrabold text-slate-700">เช็คงานค้าง (สถานะการส่งงาน)</h2>
           <span id="tracking-count" class="text-[10px] font-extrabold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">0 ITEMS</span>
         </div>
 
@@ -318,37 +341,35 @@
 
     </main>
 
-    <!-- ปุ่มการส่งการบ้านด้านล่างสุด -->
     <div class="w-full text-center pt-3 pb-2 space-y-2">
-      <button onclick="showAlert('ระบบส่งการบ้านเปิดใช้งานปกติ')" class="bg-white/95 backdrop-blur-md text-slate-700 text-xs font-bold px-8 py-2.5 rounded-full border border-white shadow-sm hover:bg-white transition">
+      <button onclick="showAlert('ระบบส่งการบ้านเปิดใช้งานปกติ')" class="bg-white text-slate-600 text-xs font-bold px-8 py-2.5 rounded-full border border-slate-200 shadow-sm hover:bg-slate-50 transition">
         การส่งการบ้าน
       </button>
       <div>
-        <span class="text-[10px] text-slate-500 font-bold">(V.1.52 Bug fix )</span>
+        <span class="text-[10px] text-slate-400 font-bold">(V.2.27)</span>
       </div>
     </div>
 
   </div>
 
   <div id="modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl p-5 w-full max-w-sm max-h-[85vh] overflow-y-auto animate-pop shadow-2xl">
-      <div class="flex justify-between items-center mb-4 pb-2 border-b">
-        <h3 id="modal-title" class="font-extrabold text-xs text-slate-700"></h3>
-        <button onclick="closeModal()" class="text-slate-500 font-bold hover:text-slate-700">✕</button>
+    <div class="bg-white rounded-3xl p-5 w-full max-w-lg max-h-[90vh] overflow-y-auto animate-pop shadow-2xl relative">
+      <div class="flex justify-between items-center mb-3 pb-2 border-b">
+        <h3 id="modal-title" class="font-extrabold text-xs text-slate-700">รายละเอียดการบ้าน</h3>
+        <button onclick="closeModal()" class="bg-slate-100 text-slate-500 w-7 h-7 rounded-full font-bold hover:bg-slate-200 transition flex items-center justify-center text-xs">✕</button>
       </div>
       <div id="modal-content"></div>
     </div>
   </div>
 
-  <!-- Custom Alert Modal -->
   <div id="custom-alert" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[120] hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-6 w-full max-w-xs animate-pop shadow-2xl text-center">
-      <div class="w-12 h-12 mx-auto bg-pink-50 text-pink-500 rounded-2xl flex items-center justify-center text-xl mb-3 shadow-inner">
+      <div class="w-12 h-12 mx-auto bg-sky-50 text-sky-500 rounded-2xl flex items-center justify-center text-xl mb-3 shadow-inner">
         <i class="fa-solid fa-circle-info"></i>
       </div>
       <h3 class="font-extrabold text-sm text-slate-800 mb-1">แจ้งเตือน</h3>
       <p id="alert-text" class="text-xs text-slate-500 font-semibold mb-5"></p>
-      <button onclick="closeAlert()" class="w-full bg-pink-500 text-white py-2.5 rounded-xl text-xs font-extrabold hover:bg-pink-600 transition shadow-sm">ปิด</button>
+      <button onclick="closeAlert()" class="w-full bg-sky-500 text-white py-2.5 rounded-xl text-xs font-extrabold hover:bg-sky-600 transition shadow-sm">ปิด</button>
     </div>
   </div>
 
@@ -412,6 +433,31 @@ function normalizeDateStr(value) {
       String(d.getDate()).padStart(2, '0');
   }
   return str;
+}
+
+function getDueDateStatus(dueDateStr) {
+  if (!dueDateStr || dueDateStr === 'ยังไม่กำหนด' || dueDateStr === 'ไม่กำหนด' || dueDateStr === '-') {
+    return { text: 'ยังไม่กำหนดส่ง', className: 'bg-slate-100 text-slate-500' };
+  }
+  const todayStr = dateKey(new Date());
+  const normDue = normalizeDateStr(dueDateStr);
+
+  if (normDue === todayStr) {
+    return { text: 'ส่งวันนี้', className: 'bg-amber-50 text-amber-600 border border-amber-200' };
+  }
+
+  const d1 = new Date(todayStr);
+  const d2 = new Date(normDue);
+  const diffDays = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) {
+    return { text: 'เลยกำหนด', className: 'bg-rose-50 text-rose-600 border border-rose-200' };
+  } else if (diffDays === 1) {
+    return { text: 'พรุ่งนี้', className: 'bg-orange-50 text-orange-600 border border-orange-200' };
+  } else if (diffDays > 1) {
+    return { text: `เหลือ ${diffDays} วัน`, className: 'bg-slate-100 text-slate-600' };
+  }
+  return { text: formatDate(dueDateStr), className: 'bg-slate-100 text-slate-600' };
 }
 
 function formatDate(value) {
@@ -557,7 +603,7 @@ async function login() {
       el('login-page').classList.add('hidden');
       el('main-page').classList.remove('hidden');
       
-      el('user-display').textContent = `(${currentUser.role}) ${currentUser.username}`;
+      el('user-display').textContent = `${currentUser.username} (${currentUser.role})`;
 
       updateAdminUI();
       switchTab('pending');
@@ -699,35 +745,25 @@ async function deleteAnnouncement() {
         <p class="text-xs text-slate-500 mt-1">ต้องการลบข้อความประกาศนี้ใช่หรือไม่?</p>
       </div>
       <div class="grid grid-cols-2 gap-2 pt-2">
-        <button onclick="closeModal()" class="w-full bg-slate-100 text-slate-600 py-2.5 rounded-xl text-xs font-extrabold hover:bg-slate-200 transition">
-          ยกเลิก
-        </button>
-        <button id="confirm-delete-ann-btn" class="w-full bg-rose-500 text-white py-2.5 rounded-xl text-xs font-extrabold hover:bg-rose-600 transition shadow-sm">
-          ลบประกาศ
-        </button>
+        <button onclick="closeModal()" class="w-full bg-slate-100 text-slate-600 py-2.5 rounded-xl text-xs font-extrabold hover:bg-slate-200 transition">ยกเลิก</button>
+        <button id="confirm-delete-ann-btn" class="w-full bg-rose-500 text-white py-2.5 rounded-xl text-xs font-extrabold hover:bg-rose-600 transition shadow-sm">ลบประกาศ</button>
       </div>
     </div>
   `;
-
   openModal('แจ้งเตือน', modalContent);
 
   document.getElementById('confirm-delete-ann-btn').onclick = async () => {
     closeModal();
-
     currentAnnouncement = '';
     renderAnnouncement();
-
     const cachedData = JSON.parse(localStorage.getItem('homeworkCacheData') || '{}');
     cachedData.announcement = '';
     localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
-
     fetch(SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
+      method: 'POST', mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ action: 'saveAnnouncement', announcement: '' })
-    }).catch(e => console.error('Announcement Delete Error:', e));
-
+    }).catch(e => console.error(e));
     logActivity('ลบประกาศ', 'ผู้ดูแลระบบลบประกาศ');
     showAlert('ลบประกาศเรียบร้อยแล้ว');
   };
@@ -763,23 +799,20 @@ function buildSubjectMap(options) {
   });
 }
 
-function onCodeInput() {
+function onCodeSelect() {
   const codeVal = el('task-code').value.toLowerCase().trim();
-  const subjectInput = el('task-subject');
-
+  const subjectSelect = el('task-subject');
   if (!codeVal) return;
+  const found = subjectMap[codeVal];
+  if (found && found.subject) subjectSelect.value = found.subject;
+}
 
-  let found = null;
-  for (let key in subjectMap) {
-    if (key === codeVal) {
-      found = subjectMap[key];
-      break;
-    }
-  }
-
-  if (found && found.subject) {
-    subjectInput.value = found.subject;
-  }
+function onSubjectSelect() {
+  const subjVal = el('task-subject').value.toLowerCase().trim();
+  const codeSelect = el('task-code');
+  if (!subjVal) return;
+  const found = subjectMap[subjVal];
+  if (found && found.code) codeSelect.value = found.code;
 }
 
 function toggleNoDueDateInput(prefix) {
@@ -802,11 +835,9 @@ function switchTab(tab) {
     el('view-' + name).classList.toggle('hidden', name !== tab);
     const btn = el('tab-' + name);
     if (name === tab) {
-      if (tab === 'pending') btn.className = 'py-2.5 rounded-xl text-xs font-extrabold transition shadow-sm bg-pink-500 text-white';
-      else if (tab === 'calendar') btn.className = 'py-2.5 rounded-xl text-xs font-extrabold transition shadow-sm bg-[#38bdf8] text-white';
-      else if (tab === 'tracking') btn.className = 'py-2.5 rounded-xl text-xs font-extrabold transition shadow-sm bg-purple-600 text-white';
+      btn.className = 'py-2.5 rounded-xl text-xs font-extrabold transition shadow-sm bg-sky-500 text-white';
     } else {
-      btn.className = 'py-2.5 rounded-xl text-xs font-extrabold transition text-slate-500';
+      btn.className = 'py-2.5 rounded-xl text-xs font-extrabold transition text-slate-500 hover:bg-slate-50';
     }
   });
 
@@ -817,15 +848,16 @@ function switchTab(tab) {
 }
 
 function renderTasks() {
-  const pinned = el('pinned-list');
+  const pinnedList = el('pinned-list');
+  const pinnedSection = el('pinned-section');
   const list = el('task-list');
   const tracking = el('tracking-list');
   const selector = el('student-task-select');
 
-  pinned.innerHTML = '';
+  pinnedList.innerHTML = '';
   list.innerHTML = '';
   tracking.innerHTML = '';
-  selector.innerHTML = '';
+  if(selector) selector.innerHTML = '';
 
   const keyword = (el('search-keyword').value || '').toLowerCase().trim();
   const selectedSubject = el('filter-subject').value;
@@ -855,101 +887,247 @@ function renderTasks() {
     }
   });
 
+  const pinnedItems = filteredTasks.filter(t => t.isPinned);
+  const normalItems = filteredTasks.filter(t => !t.isPinned);
+
+  if (pinnedItems.length > 0) {
+    pinnedSection.classList.remove('hidden');
+    pinnedItems.forEach(task => pinnedList.appendChild(createTaskCard(task, true)));
+  } else {
+    pinnedSection.classList.add('hidden');
+  }
+
   el('task-count').textContent = filteredTasks.length + ' ITEMS';
+  el('task-open-count').textContent = normalItems.length;
   if(el('tracking-count')) el('tracking-count').textContent = filteredTasks.length + ' ITEMS';
 
+  normalItems.forEach(task => list.appendChild(createTaskCard(task, false)));
   filteredTasks.forEach(task => {
-    if (task.isPinned) pinned.appendChild(createTaskCard(task));
-    else list.appendChild(createTaskCard(task));
-
     tracking.appendChild(createTrackingCard(task));
-
-    const option = document.createElement('option');
-    option.value = task.id;
-    option.textContent = task.subject + ' - ' + task.detail;
-    selector.appendChild(option);
+    if(selector) {
+      const option = document.createElement('option');
+      option.value = task.id;
+      option.textContent = task.subject + ' - ' + task.detail;
+      selector.appendChild(option);
+    }
   });
 
-  if (!pinned.children.length) pinned.innerHTML = '<p class="text-[11px] text-amber-500 text-center py-2 font-bold">ไม่มีรายการปักหมุดที่ตรงกัน</p>';
-  if (!list.children.length) list.innerHTML = '<p class="text-xs text-slate-500 text-center py-6 font-bold">ไม่พบรายการการบ้านที่ค้นหา</p>';
-  if (!tracking.children.length) tracking.innerHTML = '<p class="text-xs text-slate-500 text-center py-6 font-bold">ไม่พบรายการงานค้างที่ค้นหา</p>';
+  if (!normalItems.length) list.innerHTML = '<p class="text-xs text-slate-400 text-center py-6 font-bold">ไม่พบรายการการบ้านที่เปิดรับ</p>';
+  if (!tracking.children.length) tracking.innerHTML = '<p class="text-xs text-slate-400 text-center py-6 font-bold">ไม่พบรายการงานค้างที่ค้นหา</p>';
 }
 
-function createTaskCard(task) {
+function createTaskCard(task, isPinned) {
   const div = document.createElement('div');
-  div.className = 'bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm space-y-2';
+  
+  if (isPinned) {
+    div.className = 'bg-amber-50/40 border-2 border-amber-300 rounded-2xl p-4 shadow-sm relative overflow-hidden flex gap-3 transition hover:shadow-md cursor-pointer';
+  } else {
+    div.className = 'bg-white border border-slate-100 rounded-2xl p-4 shadow-sm relative overflow-hidden flex gap-3 transition hover:shadow-md cursor-pointer';
+  }
 
-  const unsubmitted = getUnsubmitted(task);
-  const total = TOTAL_STUDENTS + (task.extraUnsubmitted || []).filter(n => Number(n) > TOTAL_STUDENTS).length;
-  const completed = Math.max(0, total - unsubmitted.length);
-  const percent = total ? Math.round(completed / total * 100) : 0;
-
+  const dueStatus = getDueDateStatus(task.dueDate);
   const hasImage = task.imageUrl && String(task.imageUrl).trim() !== "" && String(task.imageUrl).startsWith('http');
   const imageHTML = hasImage ? `
     <div class="mt-2">
-      <a href="${task.imageUrl}" target="_blank">
-        <img src="${task.imageUrl}" alt="รูปการบ้าน" class="max-h-36 rounded-xl border border-slate-200 object-cover">
-      </a>
+      <img src="${task.imageUrl}" alt="รูปการบ้าน" class="max-h-36 rounded-xl border border-slate-200 object-cover">
     </div>
   ` : '';
 
   const pinButtonHTML = isAdmin() ? `
-    <button data-action="pin" class="text-amber-500 hover:text-amber-600 p-1" title="ปักหมุด">
+    <button data-action="pin" class="text-amber-500 hover:text-amber-600 p-1" title="ยกเลิกปักหมุด" onclick="event.stopPropagation()">
       <i class="fa-solid fa-thumbtack"></i>
     </button>
   ` : '';
 
   const adminControls = isAdmin() ? `
-    <button data-action="edit" class="text-sky-500 hover:text-sky-600 p-1" title="แก้ไขการบ้าน">
+    <button data-action="edit" class="text-sky-500 hover:text-sky-600 p-1" title="แก้ไขการบ้าน" onclick="event.stopPropagation()">
       <i class="fa-solid fa-pen-to-square"></i>
     </button>
   ` : '';
 
+  const sideBarColor = isPinned ? 'bg-amber-400' : 'bg-emerald-500';
+
+  let progressSectionHTML = '';
+  if (task.noStudent) {
+    progressSectionHTML = `
+      <div class="mt-2 text-[10px] font-bold text-slate-400 bg-slate-50 p-2 rounded-xl text-center border border-slate-100">
+        <i class="fa-solid fa-circle-info"></i> งานนี้ไม่มีการเช็คชื่อส่งงานรายบุคคล
+      </div>
+    `;
+  } else {
+    const unsubmitted = getUnsubmitted(task);
+    const total = TOTAL_STUDENTS + (task.extraUnsubmitted || []).filter(n => Number(n) > TOTAL_STUDENTS).length;
+    const completed = Math.max(0, total - unsubmitted.length);
+    const percent = total ? Math.round(completed / total * 100) : 0;
+
+    progressSectionHTML = `
+      <div class="mt-2 space-y-1.5">
+        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+          <div class="bg-emerald-500 h-full rounded-full transition-all duration-300" style="width:${percent}%"></div>
+        </div>
+        <div class="flex justify-between items-center text-[10px] font-extrabold">
+          <span class="text-slate-400">สถานะการส่ง</span>
+          <span class="text-slate-600">${completed}/${total} ส่งแล้ว</span>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-1 mt-3 pt-2 border-t border-slate-50/60" data-students-card></div>
+    `;
+  }
+
   div.innerHTML = `
-    <div class="flex justify-between items-start gap-2">
-      <div class="flex-1">
-        <span class="text-[10px] bg-pink-50 text-pink-600 px-2 py-0.5 rounded-md font-extrabold border border-pink-100">
-          ${escapeHtml(task.code)}
-        </span>
-        <h3 class="font-extrabold text-xs text-slate-800 mt-1">${escapeHtml(task.subject)}</h3>
-        <p class="text-[11px] text-slate-600 mt-0.5 font-medium">${escapeHtml(task.detail)}</p>
-        ${imageHTML}
-        <div class="flex gap-3 mt-1.5 text-[10px] font-bold">
-          <span class="text-slate-500">วันสั่ง: ${formatDate(task.assignDate)}</span>
-          <span class="text-rose-500">กำหนดส่ง: ${formatDate(task.dueDate)}</span>
+    <div class="w-1.5 ${sideBarColor} rounded-full shrink-0"></div>
+
+    <div class="flex-1">
+      <div class="flex justify-between items-start gap-2">
+        <div>
+          <span class="text-[11px] font-extrabold text-slate-700">${escapeHtml(task.subject)}</span>
+          <h3 class="font-extrabold text-xs text-slate-800 mt-0.5">${escapeHtml(task.detail)}</h3>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] font-extrabold px-2.5 py-1 rounded-full ${dueStatus.className}">${dueStatus.text}</span>
+          <div class="flex gap-1">
+            ${pinButtonHTML}
+            ${adminControls}
+            <button data-action="delete" class="text-rose-400 hover:text-rose-600 p-1" title="ลบ" onclick="event.stopPropagation()"><i class="fa-solid fa-trash"></i></button>
+          </div>
         </div>
       </div>
 
-      <div class="flex gap-1.5">
-        ${pinButtonHTML}
-        ${adminControls}
-        <button data-action="delete" class="text-rose-500 hover:text-rose-600 p-1" title="ลบ">
-          <i class="fa-solid fa-trash"></i>
-        </button>
-      </div>
-    </div>
+      ${imageHTML}
 
-    <div class="pt-2 border-t border-slate-100 space-y-1.5">
-      <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-        <div class="bg-emerald-500 h-full rounded-full" style="width:${percent}%"></div>
+      <div class="flex items-center gap-4 mt-2 text-[10px] font-extrabold">
+        <span class="text-slate-400">วันสั่ง: ${formatDate(task.assignDate)}</span>
+        <span class="text-rose-500">กำหนดส่ง: ${formatDate(task.dueDate)}</span>
       </div>
-      <div class="flex justify-between items-center text-[10px] font-extrabold">
-        <span class="text-emerald-600">ส่งแล้ว ${completed}/${total} (${percent}%)</span>
-        <span class="text-rose-500">ยังไม่ส่ง (${unsubmitted.length})</span>
-      </div>
+
+      ${progressSectionHTML}
     </div>
   `;
 
+  div.onclick = () => openTaskDetailModal(task);
+
   if (isAdmin()) {
-    div.querySelector('[data-action="pin"]').onclick = () => togglePin(task.id);
-    div.querySelector('[data-action="edit"]').onclick = () => openEditTaskModal(task.id);
+    div.querySelector('[data-action="pin"]').onclick = (e) => { e.stopPropagation(); togglePin(task.id); };
+    div.querySelector('[data-action="edit"]').onclick = (e) => { e.stopPropagation(); openEditTaskModal(task.id); };
   }
-  div.querySelector('[data-action="delete"]').onclick = () => deleteTask(task.id);
+  div.querySelector('[data-action="delete"]').onclick = (e) => { e.stopPropagation(); deleteTask(task.id); };
+
+  if (!task.noStudent) {
+    const unsubmitted = getUnsubmitted(task);
+    const studentsCard = div.querySelector('[data-students-card]');
+    if (studentsCard) {
+      unsubmitted.slice(0, 12).forEach(number => {
+        const btn = document.createElement('button');
+        btn.className = 'bg-slate-50 text-slate-600 px-2 py-0.5 rounded-lg text-[10px] font-bold border border-slate-200 hover:bg-rose-50 hover:text-rose-600 transition';
+        btn.textContent = number;
+        btn.onclick = (e) => { e.stopPropagation(); toggleStudent(task.id, number); };
+        studentsCard.appendChild(btn);
+      });
+
+      if (unsubmitted.length > 12) {
+        const moreBtn = document.createElement('span');
+        moreBtn.className = 'text-[10px] text-slate-400 font-bold self-center px-1';
+        moreBtn.textContent = `+${unsubmitted.length - 12}`;
+        studentsCard.appendChild(moreBtn);
+      }
+    }
+  }
 
   return div;
 }
 
+function openTaskDetailModal(task) {
+  const dueStatus = getDueDateStatus(task.dueDate);
+  const hasImage = task.imageUrl && String(task.imageUrl).trim() !== "" && String(task.imageUrl).startsWith('http');
+  const imageHTML = hasImage ? `
+    <div class="my-3">
+      <a href="${task.imageUrl}" target="_blank">
+        <img src="${task.imageUrl}" alt="รูปการบ้าน" class="max-h-48 rounded-xl border border-slate-200 object-cover mx-auto">
+      </a>
+    </div>
+  ` : '';
+
+  let detailBottomHTML = '';
+  if (task.noStudent) {
+    detailBottomHTML = `
+      <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-center text-xs text-slate-500 font-bold">
+        <i class="fa-solid fa-circle-info text-sky-500 mb-1 block text-base"></i>
+        งานนี้เป็นประกาศหรือกิจกรรมทั่วไป ไม่มีการเช็คชื่อส่งงานรายบุคคล
+      </div>
+    `;
+  } else {
+    const unsubmitted = getUnsubmitted(task);
+    const total = TOTAL_STUDENTS + (task.extraUnsubmitted || []).filter(n => Number(n) > TOTAL_STUDENTS).length;
+    const completed = Math.max(0, total - unsubmitted.length);
+    const percent = total ? Math.round(completed / total * 100) : 0;
+
+    let studentsButtonsHTML = '';
+    for (let i = 1; i <= TOTAL_STUDENTS; i++) {
+      const isNotSent = unsubmitted.includes(String(i));
+      const btnClass = isNotSent 
+        ? 'bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100' 
+        : 'bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100';
+      studentsButtonsHTML += `<button onclick="toggleStudentInModal('${task.id}', '${i}')" class="py-2 rounded-xl text-xs font-extrabold ${btnClass} transition">${i}</button>`;
+    }
+
+    detailBottomHTML = `
+      <div class="bg-slate-50 border border-slate-100 rounded-2xl p-3.5 space-y-2">
+        <div class="flex justify-between items-center text-xs font-extrabold">
+          <span class="text-slate-700">ส่งแล้ว ${completed}/${total} คน (${percent}%)</span>
+          <span class="text-rose-500">ยังไม่ส่ง (${unsubmitted.length})</span>
+        </div>
+        <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+          <div class="bg-emerald-500 h-full rounded-full transition-all duration-300" style="width:${percent}%"></div>
+        </div>
+
+        <div class="pt-2">
+          <span class="text-[11px] font-extrabold text-slate-600 block mb-2">เลขที่ยังไม่ได้ส่ง (คลิกเพื่อเปลี่ยนสถานะ):</span>
+          <div class="grid grid-cols-8 gap-1.5 max-h-[180px] overflow-y-auto pr-1">
+            ${studentsButtonsHTML}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  const modalHTML = `
+    <div class="space-y-4 text-left">
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-[11px] font-extrabold text-sky-600 bg-sky-50 px-2.5 py-0.5 rounded-md border border-sky-100">${escapeHtml(task.code || 'รหัสวิชา')}</span>
+          <span class="text-[10px] font-extrabold px-2.5 py-1 rounded-full ${dueStatus.className}">${dueStatus.text}</span>
+        </div>
+        <h3 class="font-extrabold text-sm text-slate-800 mt-1">${escapeHtml(task.subject)}</h3>
+        <p class="text-xs text-slate-600 mt-0.5 font-medium">${escapeHtml(task.detail)}</p>
+        ${imageHTML}
+        <div class="flex gap-4 mt-2 text-[11px] font-bold">
+          <span class="text-slate-400">สั่งเมื่อ: ${formatDate(task.assignDate)}</span>
+          <span class="text-rose-500">กำหนดส่ง: ${formatDate(task.dueDate)}</span>
+        </div>
+      </div>
+
+      ${detailBottomHTML}
+
+      <button onclick="closeModal()" class="w-full bg-slate-100 text-slate-600 py-2.5 rounded-xl text-xs font-extrabold hover:bg-slate-200 transition">
+        ปิด
+      </button>
+    </div>
+  `;
+
+  openModal(task.subject, modalHTML);
+}
+
+async function toggleStudentInModal(taskId, number) {
+  await toggleStudent(taskId, number);
+  const task = tasks.find(t => String(t.id) === String(taskId));
+  if (task) {
+    openTaskDetailModal(task);
+  }
+}
+
 function getUnsubmitted(task) {
+  if (task.noStudent) return [];
   const submitted = new Set((task.submitted || []).map(String));
   const extra = new Set((task.extraUnsubmitted || []).map(String));
   const result = [];
@@ -967,55 +1145,46 @@ function getUnsubmitted(task) {
 
 function createTrackingCard(task) {
   const div = document.createElement('div');
-  div.className = 'bg-white rounded-2xl border border-slate-100 p-3.5 space-y-2.5 shadow-sm';
+  div.className = 'bg-white rounded-2xl border border-slate-100 p-4 space-y-3 shadow-sm';
+
+  const dueStatus = getDueDateStatus(task.dueDate);
+
+  if (task.noStudent) {
+    div.innerHTML = `
+      <div class="flex justify-between items-start gap-2">
+        <div>
+          <span class="text-[10px] font-extrabold text-slate-700">${escapeHtml(task.subject)}</span>
+          <h3 class="font-extrabold text-xs text-slate-800 mt-0.5">${escapeHtml(task.detail)}</h3>
+          <div class="flex gap-3 mt-1 text-[10px] font-bold">
+            <span class="text-slate-400">วันสั่ง: ${formatDate(task.assignDate)}</span>
+            <span class="text-rose-500">กำหนดส่ง: ${formatDate(task.dueDate)}</span>
+          </div>
+        </div>
+        <span class="text-[10px] font-extrabold px-2.5 py-1 rounded-full ${dueStatus.className}">${dueStatus.text}</span>
+      </div>
+      <div class="text-[10px] font-bold text-slate-400 bg-slate-50 p-2 rounded-xl text-center border border-slate-100">
+        <i class="fa-solid fa-circle-info"></i> งานนี้ไม่มีการเช็คชื่อส่งงานรายบุคคล
+      </div>
+    `;
+    return div;
+  }
 
   const unsubmitted = getUnsubmitted(task);
   const total = TOTAL_STUDENTS + (task.extraUnsubmitted || []).filter(n => Number(n) > TOTAL_STUDENTS).length;
   const completed = Math.max(0, total - unsubmitted.length);
   const percent = total ? Math.round(completed / total * 100) : 0;
 
-  const hasImage = task.imageUrl && String(task.imageUrl).trim() !== "" && String(task.imageUrl).startsWith('http');
-  const imageHTML = hasImage ? `
-    <div class="mt-2">
-      <a href="${task.imageUrl}" target="_blank">
-        <img src="${task.imageUrl}" alt="รูปการบ้าน" class="max-h-36 rounded-xl border border-slate-200 object-cover">
-      </a>
-    </div>
-  ` : '';
-
-  const pinButtonHTML = isAdmin() ? `
-    <button data-action="pin" class="text-amber-500 hover:text-amber-600 p-1" title="ปักหมุด">
-      <i class="fa-solid fa-thumbtack"></i>
-    </button>
-  ` : '';
-
-  const adminControls = isAdmin() ? `
-    <button data-action="edit" class="text-sky-500 hover:text-sky-600 p-1" title="แก้ไขการบ้าน">
-      <i class="fa-solid fa-pen-to-square"></i>
-    </button>
-  ` : '';
-
   div.innerHTML = `
     <div class="flex justify-between items-start gap-2">
-      <div class="flex-1">
-        <span class="text-[10px] bg-purple-50 text-purple-600 px-2 py-0.5 rounded-md font-extrabold border border-purple-100">
-          ${escapeHtml(task.code)}
-        </span>
-        <h3 class="font-extrabold text-xs text-slate-800 mt-1">${escapeHtml(task.subject)}</h3>
-        <p class="text-[11px] text-slate-600 mt-0.5 font-medium">${escapeHtml(task.detail)}</p>
-        ${imageHTML}
-        <div class="flex gap-3 mt-1.5 text-[10px] font-bold">
-          <span class="text-slate-500">วันสั่ง: ${formatDate(task.assignDate)}</span>
+      <div>
+        <span class="text-[10px] font-extrabold text-slate-700">${escapeHtml(task.subject)}</span>
+        <h3 class="font-extrabold text-xs text-slate-800 mt-0.5">${escapeHtml(task.detail)}</h3>
+        <div class="flex gap-3 mt-1 text-[10px] font-bold">
+          <span class="text-slate-400">วันสั่ง: ${formatDate(task.assignDate)}</span>
           <span class="text-rose-500">กำหนดส่ง: ${formatDate(task.dueDate)}</span>
         </div>
       </div>
-      <div class="flex gap-1.5">
-        ${pinButtonHTML}
-        ${adminControls}
-        <button data-action="delete" class="text-rose-500 hover:text-rose-600 p-1" title="ลบ">
-          <i class="fa-solid fa-trash"></i>
-        </button>
-      </div>
+      <span class="text-[10px] font-extrabold px-2.5 py-1 rounded-full ${dueStatus.className}">${dueStatus.text}</span>
     </div>
 
     <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
@@ -1030,16 +1199,10 @@ function createTrackingCard(task) {
     <div class="flex flex-wrap gap-1.5 pt-1" data-students></div>
   `;
 
-  if (isAdmin()) {
-    div.querySelector('[data-action="pin"]').onclick = () => togglePin(task.id);
-    div.querySelector('[data-action="edit"]').onclick = () => openEditTaskModal(task.id);
-  }
-  div.querySelector('[data-action="delete"]').onclick = () => deleteTask(task.id);
-
   const students = div.querySelector('[data-students]');
   unsubmitted.forEach(number => {
     const button = document.createElement('button');
-    button.className = 'bg-rose-50 text-rose-600 px-2.5 py-1 rounded-lg text-[11px] font-bold border border-rose-100 hover:bg-rose-100 transition shadow-xs';
+    button.className = 'bg-rose-50 text-rose-600 px-2.5 py-1 rounded-lg text-[11px] font-bold border border-rose-100 hover:bg-rose-100 transition';
     button.textContent = number;
     button.onclick = () => toggleStudent(task.id, number);
     students.appendChild(button);
@@ -1080,16 +1243,8 @@ function handleImageUpload(fileInputId) {
     }
     const file = fileInput.files[0];
     const reader = new FileReader();
-    reader.onload = function(e) {
-      resolve({
-        data: e.target.result,
-        type: file.type,
-        name: file.name
-      });
-    };
-    reader.onerror = function(error) {
-      reject(error);
-    };
+    reader.onload = function(e) { resolve({ data: e.target.result, type: file.type, name: file.name }); };
+    reader.onerror = function(error) { reject(error); };
     reader.readAsDataURL(file);
   });
 }
@@ -1098,31 +1253,17 @@ async function addTask() {
   const code = el('task-code').value.trim();
   const subject = el('task-subject').value.trim();
   const detail = el('task-detail').value.trim();
-  
   const noDueChecked = el('task-no-due').checked;
   const dueDate = noDueChecked ? 'ยังไม่กำหนด' : el('task-due-date').value;
+  const noStudent = el('task-no-student').checked;
 
   if (!code || !subject || !detail || (!noDueChecked && !dueDate)) {
     showAlert('กรุณากรอกข้อมูลให้ครบ');
     return;
   }
 
-  const isDuplicate = tasks.some(t => 
-    t.code.toLowerCase() === code.toLowerCase() && 
-    t.detail.toLowerCase() === detail.toLowerCase()
-  );
-
-  if (isDuplicate) {
-    showAlert('แจ้งเตือน: มีการบันทึกงานซ้ำในระบบแล้ว!');
-    return;
-  }
-
   let imageObj = null;
-  try {
-    imageObj = await handleImageUpload('task-image');
-  } catch(e) {
-    console.error("Image Parse Error:", e);
-  }
+  try { imageObj = await handleImageUpload('task-image'); } catch(e) {}
 
   const task = {
     id: String(Date.now()),
@@ -1131,6 +1272,7 @@ async function addTask() {
     detail: detail,
     assignDate: el('task-assign-date').value,
     dueDate: dueDate,
+    noStudent: noStudent,
     isPinned: false,
     submitted: [],
     extraUnsubmitted: [],
@@ -1138,10 +1280,7 @@ async function addTask() {
   };
 
   const updatedTasks = [task, ...tasks];
-
-  const loadingText = imageObj ? 'กำลังบันทึกการบ้านและอัพโหลดรูป' : 'กำลังบันทึกการบ้าน';
-
-  const success = await execute(loadingText, async () => {
+  const success = await execute('กำลังบันทึกการบ้าน', async () => {
     await sendSaveRequest('saveTasks', updatedTasks);
   });
 
@@ -1155,17 +1294,13 @@ async function addTask() {
     el('task-code').value = '';
     el('task-subject').value = '';
     el('task-no-due').checked = false;
+    el('task-no-student').checked = false;
     el('task-due-date').disabled = false;
-    el('task-due-date').classList.remove('opacity-40');
-    ['task-detail', 'task-assign-date', 'task-due-date', 'task-image'].forEach(id => {
-      if(el(id)) el(id).value = '';
-    });
+    ['task-detail', 'task-assign-date', 'task-due-date', 'task-image'].forEach(id => { if(el(id)) el(id).value = ''; });
     el('task-form').classList.add('hidden');
     renderTasks();
     renderCalendar();
     selectDate(selectedDate);
-    setStatus('บันทึกการบ้านเรียบร้อย');
-    logActivity('เพิ่มการบ้าน', `วิชา ${task.subject} (${task.code}) - ${task.detail}`);
     showAlert('บันทึกการบ้านสำเร็จแล้ว');
   }
 }
@@ -1191,32 +1326,34 @@ function openEditTaskModal(id) {
         <label class="block text-xs font-extrabold text-slate-600 mb-1">รายละเอียดการบ้าน:</label>
         <textarea id="edit-task-detail" rows="3" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-white font-medium text-slate-700">${escapeHtml(task.detail)}</textarea>
       </div>
-      <div class="grid grid-cols-2 gap-2 pt-1">
-        <div class="flex flex-col">
-          <label class="text-xs font-extrabold text-slate-600 mb-1">วันสั่ง:</label>
-          <input id="edit-task-assign-date" type="date" value="${normalizeDateStr(task.assignDate)}" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-white text-slate-700">
+      
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+        <div class="flex flex-col bg-white border border-slate-200 rounded-xl p-2.5">
+          <label class="text-[11px] font-extrabold text-slate-600 mb-1">วันสั่ง:</label>
+          <input id="edit-task-assign-date" type="date" value="${normalizeDateStr(task.assignDate)}" class="w-full text-xs bg-transparent border-0 p-0 text-slate-700 font-semibold">
         </div>
-        <div class="flex flex-col">
+        <div class="flex flex-col bg-white border border-slate-200 rounded-xl p-2.5">
           <div class="flex items-center justify-between mb-1">
-            <label class="text-xs font-extrabold text-slate-600">วันส่ง:</label>
-            <label class="text-[10px] text-pink-600 font-bold flex items-center gap-1 cursor-pointer">
-              <input type="checkbox" id="edit-task-no-due" ${isNoDue ? 'checked' : ''} onchange="toggleNoDueDateInput('edit-task')" class="rounded text-pink-500 focus:ring-0"> ยังไม่กำหนด
+            <label class="text-[11px] font-extrabold text-slate-600 shrink-0">วันส่ง:</label>
+            <label class="text-[10px] text-sky-600 font-bold flex items-center gap-1 cursor-pointer shrink-0">
+              <input type="checkbox" id="edit-task-no-due" ${isNoDue ? 'checked' : ''} onchange="toggleNoDueDateInput('edit-task')" class="rounded text-sky-500 focus:ring-0"> ยังไม่กำหนด
             </label>
           </div>
-          <input id="edit-task-due-date" type="date" value="${formattedDueDate}" ${isNoDue ? 'disabled' : ''} class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-white text-slate-700 ${isNoDue ? 'opacity-40' : ''}">
+          <input id="edit-task-due-date" type="date" value="${formattedDueDate}" ${isNoDue ? 'disabled' : ''} class="w-full text-xs bg-transparent border-0 p-0 text-slate-700 font-semibold ${isNoDue ? 'opacity-40' : ''}">
         </div>
       </div>
+
+      <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl p-2.5">
+        <input type="checkbox" id="edit-task-no-student" ${task.noStudent ? 'checked' : ''} class="rounded text-sky-500 focus:ring-0 w-4 h-4">
+        <label for="edit-task-no-student" class="text-xs font-bold text-slate-600 cursor-pointer">งานนี้ไม่ต้องเช็คชื่อส่งงาน (ไม่ต้องใช้เลขที่)</label>
+      </div>
+
       <div class="grid grid-cols-2 gap-2 pt-3">
-        <button onclick="closeModal()" class="w-full bg-slate-100 text-slate-600 py-2.5 rounded-xl text-xs font-extrabold hover:bg-slate-200 transition">
-          ยกเลิก
-        </button>
-        <button onclick="saveEditTask('${task.id}')" class="w-full bg-sky-500 text-white py-2.5 rounded-xl text-xs font-extrabold hover:bg-sky-600 transition shadow-sm">
-          บันทึกการแก้ไข
-        </button>
+        <button onclick="closeModal()" class="w-full bg-slate-100 text-slate-600 py-2.5 rounded-xl text-xs font-extrabold hover:bg-slate-200 transition">ยกเลิก</button>
+        <button onclick="saveEditTask('${task.id}')" class="w-full bg-sky-500 text-white py-2.5 rounded-xl text-xs font-extrabold hover:bg-sky-600 transition shadow-sm">บันทึกการแก้ไข</button>
       </div>
     </div>
   `;
-
   openModal('แก้ไขรายการการบ้าน', modalContent);
 }
 
@@ -1224,27 +1361,15 @@ async function saveEditTask(id) {
   const task = tasks.find(t => String(t.id) === String(id));
   if (!task) return;
 
-  const code = el('edit-task-code').value.trim();
-  const subject = el('edit-task-subject').value.trim();
-  const detail = el('edit-task-detail').value.trim();
-  const assignDate = el('edit-task-assign-date').value;
-  
+  task.code = el('edit-task-code').value.trim();
+  task.subject = el('edit-task-subject').value.trim();
+  task.detail = el('edit-task-detail').value.trim();
+  task.assignDate = el('edit-task-assign-date').value;
   const noDueChecked = el('edit-task-no-due').checked;
-  const dueDate = noDueChecked ? 'ยังไม่กำหนด' : el('edit-task-due-date').value;
-
-  if (!code || !subject || !detail || (!noDueChecked && !dueDate)) {
-    showAlert('กรุณากรอกข้อมูลให้ครบถ้วน');
-    return;
-  }
-
-  task.code = code;
-  task.subject = subject;
-  task.detail = detail;
-  task.assignDate = assignDate;
-  task.dueDate = dueDate;
+  task.dueDate = noDueChecked ? 'ยังไม่กำหนด' : el('edit-task-due-date').value;
+  task.noStudent = el('edit-task-no-student').checked;
 
   closeModal();
-
   renderTasks();
   renderCalendar();
   selectDate(selectedDate);
@@ -1254,8 +1379,6 @@ async function saveEditTask(id) {
   localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
 
   sendSaveRequest('saveTasks', tasks);
-
-  logActivity('แก้ไขการบ้าน', `วิชา ${task.subject} (${task.code}) - ${task.detail}`);
   showAlert('แก้ไขการบ้านเรียบร้อยแล้ว');
 }
 
@@ -1264,13 +1387,10 @@ async function togglePin(id) {
   if (task) {
     task.isPinned = !task.isPinned;
     renderTasks();
-    
     const cachedData = JSON.parse(localStorage.getItem('homeworkCacheData') || '{}');
     cachedData.tasks = tasks;
     localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
-
     sendSaveRequest('saveTasks', tasks);
-    logActivity(task.isPinned ? 'ปักหมุดการบ้าน' : 'ยกเลิกปักหมุด', `วิชา ${task.subject}`);
   }
 }
 
@@ -1288,42 +1408,30 @@ async function deleteTask(id) {
         <p class="text-xs text-slate-500 mt-1">วิชา: ${escapeHtml(task.subject)}<br>${escapeHtml(task.detail)}</p>
       </div>
       <div class="grid grid-cols-2 gap-2 pt-2">
-        <button onclick="closeModal()" class="w-full bg-slate-100 text-slate-600 py-2.5 rounded-xl text-xs font-extrabold hover:bg-slate-200 transition">
-          ยกเลิก
-        </button>
-        <button id="confirm-delete-btn" class="w-full bg-rose-500 text-white py-2.5 rounded-xl text-xs font-extrabold hover:bg-rose-600 transition shadow-sm">
-          ลบข้อมูล
-        </button>
+        <button onclick="closeModal()" class="w-full bg-slate-100 text-slate-600 py-2.5 rounded-xl text-xs font-extrabold hover:bg-slate-200 transition">ยกเลิก</button>
+        <button id="confirm-delete-btn" class="w-full bg-rose-500 text-white py-2.5 rounded-xl text-xs font-extrabold hover:bg-rose-600 transition shadow-sm">ลบข้อมูล</button>
       </div>
     </div>
   `;
-
   openModal('แจ้งเตือน', modalContent);
 
   document.getElementById('confirm-delete-btn').onclick = async () => {
     closeModal();
-
     tasks = tasks.filter(t => String(t.id) !== String(id));
     renderTasks();
     renderCalendar();
     selectDate(selectedDate);
-
     const cachedData = JSON.parse(localStorage.getItem('homeworkCacheData') || '{}');
     cachedData.tasks = tasks;
     localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
-
     sendSaveRequest('saveTasks', tasks);
-
-    if (task) {
-      logActivity('ลบการบ้าน', `วิชา ${task.subject} - ${task.detail}`);
-    }
     showAlert('ลบการบ้านเรียบร้อยแล้ว');
   };
 }
 
 async function toggleStudent(taskId, number) {
   const task = tasks.find(t => String(t.id) === String(taskId));
-  if (!task) return;
+  if (!task || task.noStudent) return;
   if (!Array.isArray(task.submitted)) task.submitted = [];
 
   const numStr = String(number);
@@ -1339,22 +1447,17 @@ async function toggleStudent(taskId, number) {
   const cachedData = JSON.parse(localStorage.getItem('homeworkCacheData') || '{}');
   cachedData.tasks = tasks;
   localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
-
   sendSaveRequest('saveTasks', tasks);
-
-  logActivity('เปลี่ยนสถานะส่งงาน', `เลขที่ ${numStr} วิชา ${task.subject} (${isSubmitted ? 'ส่งแล้ว' : 'ยังไม่ส่ง'})`);
 }
 
 async function addExtraStudent() {
   const taskId = el('student-task-select').value;
   const number = el('student-number').value.trim();
-
   if (!taskId || !number) return;
   const task = tasks.find(t => String(t.id) === String(taskId));
-  if (!task) return;
+  if (!task || task.noStudent) return;
 
   if (!Array.isArray(task.extraUnsubmitted)) task.extraUnsubmitted = [];
-  
   if (task.extraUnsubmitted.includes(number)) {
     showAlert('แจ้งเตือน: มีรายชื่อเลขที่นี้ในรายการคนค้างอยู่แล้ว!');
     return;
@@ -1366,12 +1469,8 @@ async function addExtraStudent() {
   const cachedData = JSON.parse(localStorage.getItem('homeworkCacheData') || '{}');
   cachedData.tasks = tasks;
   localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
-
   sendSaveRequest('saveTasks', tasks);
-  logActivity('เพิ่มรายชื่อคนค้างงาน', `เลขที่ ${number} ในวิชา ${task.subject}`);
-
   showAlert('เพิ่มรายชื่อคนค้างสำเร็จแล้ว');
-
   el('student-number').value = '';
   el('student-form').classList.add('hidden');
 }
@@ -1379,11 +1478,7 @@ async function addExtraStudent() {
 function renderCalendar() {
   const year = calendarDate.getFullYear();
   const month = calendarDate.getMonth();
-
-  const thaiMonthsLong = [
-    'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
-    'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
-  ];
+  const thaiMonthsLong = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
   el('calendar-month-year').textContent = `${thaiMonthsLong[month]} ${year + 543}`;
 
   const container = el('calendar-days');
@@ -1404,7 +1499,7 @@ function renderCalendar() {
     
     button.className = 'h-14 rounded-2xl transition flex flex-col items-center justify-start pt-2.5 relative p-1 ' +
       (key === selectedDate 
-        ? 'border-2 border-[#38bdf8] bg-white text-[#38bdf8] font-black shadow-sm' 
+        ? 'border-2 border-sky-400 bg-white text-sky-500 font-black shadow-sm' 
         : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-100');
     button.onclick = () => selectDate(key);
 
@@ -1413,11 +1508,7 @@ function renderCalendar() {
     dayText.textContent = day;
     button.appendChild(dayText);
 
-    const hasTask = tasks.some(t => {
-      const due = normalizeDateStr(t.dueDate);
-      return due === key;
-    });
-
+    const hasTask = tasks.some(t => normalizeDateStr(t.dueDate) === key);
     const rawEvent = dailyEvents[key];
     const eventsArr = Array.isArray(rawEvent) ? rawEvent : (rawEvent ? [rawEvent] : []);
     const hasEvent = eventsArr.length > 0 && eventsArr.some(e => String(e).trim() !== '');
@@ -1425,22 +1516,18 @@ function renderCalendar() {
     if (hasTask || hasEvent) {
       const dotsContainer = document.createElement('div');
       dotsContainer.className = 'flex gap-1 items-center justify-center';
-
       if (hasTask) {
         const pinkDot = document.createElement('span');
-        pinkDot.className = 'w-1.5 h-1.5 rounded-full bg-pink-500 shadow-sm';
+        pinkDot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-sm';
         dotsContainer.appendChild(pinkDot);
       }
-
       if (hasEvent) {
         const blueDot = document.createElement('span');
         blueDot.className = 'w-1.5 h-1.5 rounded-full bg-sky-400 shadow-sm';
         dotsContainer.appendChild(blueDot);
       }
-
       button.appendChild(dotsContainer);
     }
-
     container.appendChild(button);
   }
 }
@@ -1453,7 +1540,6 @@ function changeMonth(direction) {
 function selectDate(key) {
   selectedDate = key;
   renderCalendar();
-
   el('selected-date-label').textContent = 'รายการวันที่ ' + formatDate(key);
 
   const container = el('selected-date-tasks');
@@ -1466,136 +1552,117 @@ function selectDate(key) {
   });
   el('selected-date-count').textContent = matches.length + ' รายการ';
 
-  matches.forEach(task => container.appendChild(createTaskCard(task)));
-  if (!matches.length) container.innerHTML = '<p class="text-xs text-slate-500 text-center py-2 font-bold">ไม่มีรายการในวันนี้</p>';
+  matches.forEach(task => container.appendChild(createTaskCard(task, false)));
+  if (!matches.length) container.innerHTML = '<p class="text-xs text-slate-400 text-center py-2 font-bold">ไม่มีรายการในวันนี้</p>';
 
   const eventList = el('event-list');
   eventList.innerHTML = '';
-  
   const rawEvent = dailyEvents[key];
   const events = Array.isArray(rawEvent) ? rawEvent : (rawEvent ? [rawEvent] : []);
 
   events.forEach((event, index) => {
     const div = document.createElement('div');
     div.className = 'bg-sky-50 text-sky-800 rounded-xl p-2 text-xs border border-sky-100 font-bold flex justify-between items-center';
-    
     const span = document.createElement('span');
     span.textContent = event;
     div.appendChild(span);
 
     const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'text-rose-500 hover:text-rose-700 px-1.5 py-0.5 text-xs';
+    deleteBtn.className = 'text-rose-400 hover:text-rose-600 px-1.5 py-0.5 text-xs';
     deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
     deleteBtn.onclick = () => deleteEvent(key, index);
     div.appendChild(deleteBtn);
-
     eventList.appendChild(div);
   });
 
-  if (!eventList.children.length) eventList.innerHTML = '<p class="text-[11px] text-slate-500 font-semibold">ไม่มีกิจกรรมพิเศษ</p>';
+  if (!eventList.children.length) eventList.innerHTML = '<p class="text-[11px] text-slate-400 font-semibold">ไม่มีกิจกรรมพิเศษ</p>';
 }
 
-async function addEvent() {
-  const event = el('event-input').value.trim();
-  if (!event) return;
-
-  if (!dailyEvents[selectedDate]) dailyEvents[selectedDate] = [];
-  else if (!Array.isArray(dailyEvents[selectedDate])) dailyEvents[selectedDate] = [dailyEvents[selectedDate]];
-
-  if (dailyEvents[selectedDate].includes(event)) {
-    showAlert('แจ้งเตือน: มีกิจกรรมนี้ในวันนี้อยู่แล้ว!');
+async function addEventFromTracking() {
+  const dateVal = el('event-date').value;
+  const eventText = el('event-input').value.trim();
+  if (!dateVal || !eventText) {
+    showAlert('กรุณากรอกวันที่และชื่อกิจกรรมให้ครบถ้วน');
     return;
   }
 
-  dailyEvents[selectedDate].push(event);
+  if (!dailyEvents[dateVal]) dailyEvents[dateVal] = [];
+  else if (!Array.isArray(dailyEvents[dateVal])) dailyEvents[dateVal] = [dailyEvents[dateVal]];
 
-  selectDate(selectedDate);
+  dailyEvents[dateVal].push(eventText);
+  
   el('event-input').value = '';
+  el('event-date').value = '';
   el('event-form').classList.add('hidden');
+
+  renderCalendar();
+  selectDate(selectedDate);
 
   const cachedData = JSON.parse(localStorage.getItem('homeworkCacheData') || '{}');
   cachedData.events = dailyEvents;
   localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
-
   sendSaveRequest('saveEvents', dailyEvents);
-
-  logActivity('เพิ่มกิจกรรม', `วันที่ ${formatDate(selectedDate)}: ${event}`);
-
   showAlert('เพิ่มกิจกรรมสำเร็จแล้ว');
 }
 
 async function deleteEvent(key, index) {
-  const modalContent = `
-    <div class="text-center space-y-4">
-      <div class="w-12 h-12 mx-auto bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center text-xl shadow-inner">
-        <i class="fa-solid fa-triangle-exclamation"></i>
-      </div>
-      <div>
-        <h4 class="font-extrabold text-sm text-slate-800">ยืนยันการลบกิจกรรม</h4>
-        <p class="text-xs text-slate-500 mt-1">ต้องการลบกิจกรรมนี้ใช่หรือไม่?</p>
-      </div>
-      <div class="grid grid-cols-2 gap-2 pt-2">
-        <button onclick="closeModal()" class="w-full bg-slate-100 text-slate-600 py-2.5 rounded-xl text-xs font-extrabold hover:bg-slate-200 transition">
-          ยกเลิก
-        </button>
-        <button id="confirm-delete-evt-btn" class="w-full bg-rose-500 text-white py-2.5 rounded-xl text-xs font-extrabold hover:bg-rose-600 transition shadow-sm">
-          ลบข้อมูล
-        </button>
-      </div>
-    </div>
-  `;
-
-  openModal('แจ้งเตือน', modalContent);
-
-  document.getElementById('confirm-delete-evt-btn').onclick = async () => {
-    closeModal();
-
-    const rawEvent = dailyEvents[key];
-    const events = Array.isArray(rawEvent) ? rawEvent : (rawEvent ? [rawEvent] : []);
-
-    if (events.length > 0) {
-      const removed = events.splice(index, 1);
-      if (events.length === 0) delete dailyEvents[key];
-      else dailyEvents[key] = events;
-
-      selectDate(selectedDate);
-
-      const cachedData = JSON.parse(localStorage.getItem('homeworkCacheData') || '{}');
-      cachedData.events = dailyEvents;
-      localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
-
-      sendSaveRequest('saveEvents', dailyEvents);
-      logActivity('ลบกิจกรรม', `วันที่ ${formatDate(key)}: ${removed}`);
-      showAlert('ลบกิจกรรมเรียบร้อยแล้ว');
-    }
-  };
+  const rawEvent = dailyEvents[key];
+  const events = Array.isArray(rawEvent) ? rawEvent : (rawEvent ? [rawEvent] : []);
+  if (events.length > 0) {
+    events.splice(index, 1);
+    if (events.length === 0) delete dailyEvents[key];
+    else dailyEvents[key] = events;
+    selectDate(selectedDate);
+    const cachedData = JSON.parse(localStorage.getItem('homeworkCacheData') || '{}');
+    cachedData.events = dailyEvents;
+    localStorage.setItem('homeworkCacheData', JSON.stringify(cachedData));
+    sendSaveRequest('saveEvents', dailyEvents);
+  }
 }
 
 function updateOptions() {
   const filterSubjSelect = el('filter-subject');
-  const codeDatalist = el('code-suggestions');
+  const taskCodeSelect = el('task-code');
+  const taskSubjSelect = el('task-subject');
   
   const currentSelectedFilter = filterSubjSelect.value;
+  const currentTaskCode = taskCodeSelect ? taskCodeSelect.value : '';
+  const currentTaskSubj = taskSubjSelect ? taskSubjSelect.value : '';
 
   filterSubjSelect.innerHTML = '<option value="">ทุกวิชา</option>';
-  if (codeDatalist) codeDatalist.innerHTML = '';
+  if (taskCodeSelect) taskCodeSelect.innerHTML = '<option value="">เลือกรหัสวิชา</option>';
+  if (taskSubjSelect) taskSubjSelect.innerHTML = '<option value="">เลือกชื่อวิชา</option>';
 
-  codes.forEach(code => {
-    if (codeDatalist) {
+  codes.forEach(c => {
+    const val = typeof c === 'object' ? (c.code || c.val || '') : String(c || '');
+    if (val && taskCodeSelect) {
       const option = document.createElement('option');
-      option.value = code;
-      codeDatalist.appendChild(option);
+      option.value = val;
+      option.textContent = val;
+      taskCodeSelect.appendChild(option);
     }
   });
 
-  subjects.forEach(subject => {
-    const filterOpt = document.createElement('option');
-    filterOpt.value = subject;
-    filterOpt.textContent = subject;
-    filterSubjSelect.appendChild(filterOpt);
+  subjects.forEach(s => {
+    const val = typeof s === 'object' ? (s.subject || s.name || s.val || '') : String(s || '');
+    if (val) {
+      const filterOpt = document.createElement('option');
+      filterOpt.value = val;
+      filterOpt.textContent = val;
+      filterSubjSelect.appendChild(filterOpt);
+
+      if (taskSubjSelect) {
+        const taskOpt = document.createElement('option');
+        taskOpt.value = val;
+        taskOpt.textContent = val;
+        taskSubjSelect.appendChild(taskOpt);
+      }
+    }
   });
 
   filterSubjSelect.value = currentSelectedFilter;
+  if (taskCodeSelect && currentTaskCode) taskCodeSelect.value = currentTaskCode;
+  if (taskSubjSelect && currentTaskSubj) taskSubjSelect.value = currentTaskSubj;
 }
 
 function openModal(title, content) {
@@ -1611,58 +1678,44 @@ function openOptions() {
     showAlert('คุณไม่มีสิทธิ์เข้าถึงส่วนนี้');
     return;
   }
-
   const content = `
     <div class="space-y-3">
-      <p class="text-[11px] text-slate-600 font-semibold">รายการรหัสวิชาและชื่อวิชาทั้งหมดในระบบ (จัดการเพิ่ม/ลบผ่าน Google Sheets)</p>
-
+      <p class="text-[11px] text-slate-600 font-semibold">รายการรหัสวิชาและชื่อวิชาทั้งหมดในระบบ</p>
       <div class="grid grid-cols-2 gap-2">
         <div class="bg-slate-50 p-2.5 rounded-2xl border">
           <h4 class="font-extrabold text-[11px] text-slate-700 mb-1">รหัสวิชา</h4>
           <div id="option-codes" class="text-xs space-y-1 max-h-[180px] overflow-y-auto font-medium text-slate-700"></div>
         </div>
-
         <div class="bg-slate-50 p-2.5 rounded-2xl border">
           <h4 class="font-extrabold text-[11px] text-slate-700 mb-1">ชื่อวิชา</h4>
           <div id="option-subjects" class="text-xs space-y-1 max-h-[180px] overflow-y-auto font-medium text-slate-700"></div>
         </div>
       </div>
-
-      <button onclick="syncDataWithPopup(); closeModal();" class="w-full bg-sky-50 text-sky-600 border border-sky-100 py-2 rounded-xl text-xs font-bold mt-2">
-        รีเฟรชรายการตัวเลือก
-      </button>
+      <button onclick="syncDataWithPopup(); closeModal();" class="w-full bg-sky-50 text-sky-600 border border-sky-100 py-2 rounded-xl text-xs font-bold mt-2">รีเฟรชรายการตัวเลือก</button>
     </div>
   `;
-
   openModal('รายการรหัสวิชาและชื่อวิชา', content);
 
   const cBox = el('option-codes');
   const sBox = el('option-subjects');
-
   cBox.innerHTML = '';
   sBox.innerHTML = '';
 
-  if (codes.length) {
-    codes.forEach(c => {
-      const row = document.createElement('div');
-      row.className = 'bg-white p-1.5 rounded-lg border border-slate-100 mb-1 text-[11px]';
-      row.textContent = c;
-      cBox.appendChild(row);
-    });
-  } else {
-    cBox.innerHTML = '<p class="text-slate-500 text-[10px]">ไม่มีข้อมูล</p>';
-  }
+  codes.forEach(c => {
+    const val = typeof c === 'object' ? (c.code || c.val || '') : String(c || '');
+    const row = document.createElement('div');
+    row.className = 'bg-white p-1.5 rounded-lg border border-slate-100 mb-1 text-[11px]';
+    row.textContent = val;
+    cBox.appendChild(row);
+  });
 
-  if (subjects.length) {
-    subjects.forEach(s => {
-      const row = document.createElement('div');
-      row.className = 'bg-white p-1.5 rounded-lg border border-slate-100 mb-1 text-[11px]';
-      row.textContent = s;
-      sBox.appendChild(row);
-    });
-  } else {
-    sBox.innerHTML = '<p class="text-slate-500 text-[10px]">ไม่มีข้อมูล</p>';
-  }
+  subjects.forEach(s => {
+    const val = typeof s === 'object' ? (s.subject || s.name || s.val || '') : String(s || '');
+    const row = document.createElement('div');
+    row.className = 'bg-white p-1.5 rounded-lg border border-slate-100 mb-1 text-[11px]';
+    row.textContent = val;
+    sBox.appendChild(row);
+  });
 }
 
 async function openLogs() {
@@ -1670,91 +1723,35 @@ async function openLogs() {
     showAlert('เฉพาะยศ Founder เท่านั้นที่สามารถดูประวัติการใช้งานได้');
     return;
   }
-
-  const fetchAll = isAllLogsLoaded;
-
-  if (!fetchAll) {
-    openModal('ประวัติการใช้งาน', '<p class="text-xs text-center py-4 text-slate-500 font-bold">กำลังโหลดประวัติ...</p>');
-  } else {
-    el('modal-content').innerHTML = '<p class="text-xs text-center py-4 text-slate-500 font-bold">กำลังโหลดประวัติทั้งหมด...</p>';
-  }
-
+  openModal('ประวัติการใช้งาน', '<p class="text-xs text-center py-4 text-slate-400 font-bold">กำลังโหลดประวัติ...</p>');
   try {
-    const logs = await fetchJSON(`${SCRIPT_URL}?action=getLogs&all=${fetchAll ? 'true' : 'false'}&t=${Date.now()}`);
+    const logs = await fetchJSON(`${SCRIPT_URL}?action=getLogs&t=${Date.now()}`);
     const container = el('modal-content');
     container.innerHTML = '';
-
-    const topBtns = document.createElement('div');
-    topBtns.className = 'flex gap-2 mb-3';
-
-    topBtns.innerHTML = `
-      <button onclick="clearLogs()" class="w-1/2 bg-rose-50 text-rose-600 rounded-xl py-2 text-xs font-bold border border-rose-100">ล้างประวัติทั้งหมด</button>
-      <button onclick="isAllLogsLoaded = !isAllLogsLoaded; openLogs();" class="w-1/2 bg-pink-50 text-pink-700 rounded-xl py-2 text-xs font-bold border border-pink-100">
-        ${fetchAll ? 'แสดง 20 ล่าสุด' : 'โหลดทั้งหมด'}
-      </button>
-    `;
-    container.appendChild(topBtns);
-
     if (Array.isArray(logs) && logs.length > 0) {
       const listToShow = [...logs].reverse();
-
       const logListContainer = document.createElement('div');
       logListContainer.className = 'space-y-2 max-h-[350px] overflow-y-auto pr-1';
-
       listToShow.forEach(log => {
         const item = document.createElement('div');
         item.className = 'bg-slate-50 border border-slate-100 p-2.5 rounded-xl text-xs space-y-1';
         item.innerHTML = `
           <div class="flex justify-between items-center">
-            <span class="font-extrabold text-pink-600 bg-pink-50 px-2 py-0.5 rounded-md text-[10px] border border-pink-100">${escapeHtml(log.actionText || 'กิจกรรม')}</span>
+            <span class="font-extrabold text-sky-600 bg-sky-50 px-2 py-0.5 rounded-md text-[10px]">${escapeHtml(log.actionText || 'กิจกรรม')}</span>
             <span class="text-[10px] text-slate-400 font-semibold">${log.timestamp ? new Date(log.timestamp).toLocaleString('th-TH') : '-'}</span>
           </div>
           <p class="text-slate-800 font-semibold text-[11px]">${escapeHtml(log.details || '-')}</p>
-          <p class="text-[10px] text-slate-500">โดย: <span class="font-bold text-slate-700">${escapeHtml(log.username || 'System')}</span></p>
+          <p class="text-[10px] text-slate-400">โดย: <span class="font-bold text-slate-600">${escapeHtml(log.username || 'System')}</span></p>
         `;
         logListContainer.appendChild(item);
       });
       container.appendChild(logListContainer);
     } else {
-      container.innerHTML += '<p class="text-xs text-slate-500 text-center py-4 font-bold">ไม่มีประวัติการใช้งาน</p>';
+      container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4 font-bold">ไม่มีประวัติการใช้งาน</p>';
     }
   } catch (error) {
     el('modal-content').textContent = error.message;
   }
-}
-
-async function clearLogs() {
-  const modalContent = `
-    <div class="text-center space-y-4">
-      <div class="w-12 h-12 mx-auto bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center text-xl shadow-inner">
-        <i class="fa-solid fa-triangle-exclamation"></i>
-      </div>
-      <div>
-        <h4 class="font-extrabold text-sm text-slate-800">ยืนยันการล้างประวัติ</h4>
-        <p class="text-xs text-slate-500 mt-1">ต้องการลบประวัติการใช้งานทั้งหมดใช่หรือไม่?</p>
-      </div>
-      <div class="grid grid-cols-2 gap-2 pt-2">
-        <button onclick="closeModal()" class="w-full bg-slate-100 text-slate-600 py-2.5 rounded-xl text-xs font-extrabold hover:bg-slate-200 transition">
-          ยกเลิก
-        </button>
-        <button id="confirm-clear-logs-btn" class="w-full bg-rose-500 text-white py-2.5 rounded-xl text-xs font-extrabold hover:bg-rose-600 transition shadow-sm">
-          ล้างประวัติ
-        </button>
-      </div>
-    </div>
-  `;
-
-  openModal('แจ้งเตือน', modalContent);
-
-  document.getElementById('confirm-clear-logs-btn').onclick = async () => {
-    closeModal();
-    await execute('กำลังล้างประวัติ...', async () => {
-      await sendSaveRequest('clearLogs');
-    });
-
-    isAllLogsLoaded = false;
-    openLogs();
-  };
 }
 
 function logActivity(actionText, details) {
@@ -1768,14 +1765,12 @@ function logActivity(actionText, details) {
       actionText: actionText,
       details: details
     })
-  }).catch(e => console.error('Log Error:', e));
+  }).catch(e => console.error(e));
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
   const lastUser = localStorage.getItem('homeworkLastUser');
-  if (lastUser) {
-    el('username').value = lastUser;
-  }
+  if (lastUser) el('username').value = lastUser;
 
   const saved = sessionStorage.getItem('homeworkUser');
   if (saved) {
@@ -1783,12 +1778,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       currentUser = JSON.parse(saved);
       el('login-page').classList.add('hidden');
       el('main-page').classList.remove('hidden');
-      
-      el('user-display').textContent = `(${currentUser.role}) ${currentUser.username}`;
-      
+      el('user-display').textContent = `${currentUser.username} (${currentUser.role})`;
       updateAdminUI();
       switchTab('pending');
-
       await loadAllData(false);
     } catch (error) {
       sessionStorage.removeItem('homeworkUser');
@@ -1799,4 +1791,3 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 </body>
 </html>
-
